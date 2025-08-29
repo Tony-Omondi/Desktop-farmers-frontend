@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'https://farmers-marketplace-n2qm.onrender.com';
 
 const AddProductForm = () => {
     const [formData, setFormData] = useState({

@@ -1,12 +1,11 @@
-// frontend_ai/src/components/AdminDashboard.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'; 
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AddProductForm from './AddProductForm';
 import AddCategoryForm from './AddCategoryForm';
 import CreateOrderForm from './CreateOrderForm';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'https://farmers-marketplace-n2qm.onrender.com';
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('users');
@@ -31,7 +30,7 @@ const AdminDashboard = () => {
                 setIsLoading(true);
                 const accessToken = localStorage.getItem('access_token');
                 if (!accessToken) {
-                    navigate('/frontend_ai/admin/login');
+                    navigate('/frontend_ai/adamin/login');
                     return;
                 }
                 const response = await axios.get(`${BASE_URL}/api/adamin/dashboard/`, {
@@ -57,7 +56,7 @@ const AdminDashboard = () => {
                 if (err.response?.status === 401) {
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('refresh_token');
-                    navigate('/frontend_ai/admin/login');
+                    navigate('/frontend_ai/adamin/login');
                 }
             } finally {
                 setIsLoading(false);
@@ -67,7 +66,7 @@ const AdminDashboard = () => {
     }, [navigate]);
 
     // Filter data based on date range
-    const filterDataByDate = (items) => {
+    const filterDataByDate = (items, dateField = 'created_at') => {
         if (filterDateRange === 'all') return items;
         
         const now = new Date();
@@ -84,7 +83,7 @@ const AdminDashboard = () => {
                 const yesterdayEnd = new Date(startDate);
                 yesterdayEnd.setHours(23, 59, 59, 999);
                 return items.filter(item => {
-                    const itemDate = new Date(item.created_at || item.date_joined || item.order_date);
+                    const itemDate = new Date(item[dateField]);
                     return itemDate >= startDate && itemDate <= yesterdayEnd;
                 });
             case 'last7':
@@ -99,7 +98,7 @@ const AdminDashboard = () => {
                 const endDate = new Date(customEndDate);
                 endDate.setHours(23, 59, 59, 999);
                 return items.filter(item => {
-                    const itemDate = new Date(item.created_at || item.date_joined || item.order_date);
+                    const itemDate = new Date(item[dateField]);
                     return itemDate >= startDate && itemDate <= endDate;
                 });
             default:
@@ -107,7 +106,7 @@ const AdminDashboard = () => {
         }
         
         return items.filter(item => {
-            const itemDate = new Date(item.created_at || item.date_joined || item.order_date);
+            const itemDate = new Date(item[dateField]);
             return itemDate >= startDate;
         });
     };
@@ -134,7 +133,18 @@ const AdminDashboard = () => {
                 return items.filter(order => 
                     order.order_id.toLowerCase().includes(query) || 
                     order.user.email.toLowerCase().includes(query) ||
-                    order.status.toLowerCase().includes(query)
+                    order.status.toLowerCase().includes(query) ||
+                    String(order.total_amount).includes(query) ||
+                    order.payment_status.toLowerCase().includes(query)
+                );
+            case 'payments':
+                return items.filter(order => 
+                    order.payment && (
+                        order.payment.reference?.toLowerCase().includes(query) ||
+                        String(order.payment.amount).includes(query) ||
+                        order.payment.payment_status.toLowerCase().includes(query) ||
+                        order.order_id.toLowerCase().includes(query)
+                    )
                 );
             default:
                 return items;
@@ -154,14 +164,24 @@ const AdminDashboard = () => {
 
     const getFilteredData = (type) => {
         let items = [];
+        let dateField = 'created_at';
         switch(type) {
-            case 'users': items = data.users; break;
-            case 'products': items = data.products; break;
-            case 'orders': items = data.orders; break;
-            default: return [];
+            case 'users':
+                items = data.users;
+                dateField = 'date_joined';
+                break;
+            case 'products':
+            case 'orders':
+                items = data[type];
+                break;
+            case 'payments':
+                items = data.orders.filter(order => order.payment && order.payment.reference);
+                break;
+            default:
+                return [];
         }
         
-        const dateFiltered = filterDataByDate(items);
+        const dateFiltered = filterDataByDate(items, dateField);
         return filterDataBySearch(dateFiltered, type);
     };
 
@@ -174,7 +194,7 @@ const AdminDashboard = () => {
                         onClick={() => {
                             localStorage.removeItem('access_token');
                             localStorage.removeItem('refresh_token');
-                            navigate('/frontend_ai/admin/login');
+                            navigate('/frontend_ai/adamin/login');
                         }}
                         className="mt-2 md:mt-0 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
                     >
@@ -326,7 +346,7 @@ const AdminDashboard = () => {
                                                         <span className="text-emerald-600">${order.total_amount}</span>
                                                     </div>
                                                     <div className="text-sm text-gray-500">
-                                                        {order.user.email} • {new Date(order.order_date).toLocaleDateString()}
+                                                        {order.user.email} • {new Date(order.created_at).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}
                                                     </div>
                                                     <div className="text-sm mt-1">
                                                         Status: <span className={`px-2 py-1 rounded-full text-xs ${
@@ -347,7 +367,7 @@ const AdminDashboard = () => {
                                                     <div className="font-medium">{user.full_name}</div>
                                                     <div className="text-sm text-gray-500">{user.email}</div>
                                                     <div className="text-sm mt-1">
-                                                        Joined: {new Date(user.date_joined).toLocaleDateString()}
+                                                        Joined: {new Date(user.date_joined).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}
                                                     </div>
                                                 </div>
                                             ))}
@@ -393,7 +413,7 @@ const AdminDashboard = () => {
                                                             {user.is_active ? 'Yes' : 'No'}
                                                         </span>
                                                     </td>
-                                                    <td className="p-3">{new Date(user.date_joined).toLocaleDateString()}</td>
+                                                    <td className="p-3">{new Date(user.date_joined).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -434,7 +454,7 @@ const AdminDashboard = () => {
                                                 Category: {product.category?.name || 'None'}
                                             </div>
                                             <p className="text-xs text-gray-400 mt-2">
-                                                Created: {new Date(product.created_at).toLocaleDateString()}
+                                                Created: {new Date(product.created_at).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}
                                             </p>
                                         </div>
                                     ))}
@@ -458,6 +478,7 @@ const AdminDashboard = () => {
                                                 <th className="p-3">Status</th>
                                                 <th className="p-3">Payment Status</th>
                                                 <th className="p-3">Date</th>
+                                                <th className="p-3">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -484,7 +505,15 @@ const AdminDashboard = () => {
                                                             {order.payment_status}
                                                         </span>
                                                     </td>
-                                                    <td className="p-3">{new Date(order.order_date).toLocaleDateString()}</td>
+                                                    <td className="p-3">{new Date(order.created_at).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}</td>
+                                                    <td className="p-3">
+                                                        <button
+                                                            onClick={() => navigate(`/frontend_ai/admin/orders/${order.order_id}`)}
+                                                            className="text-emerald-600 hover:text-emerald-800 text-sm font-medium"
+                                                        >
+                                                            View Details
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -498,7 +527,7 @@ const AdminDashboard = () => {
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-xl font-semibold">Payments</h2>
                                     <span className="text-gray-500">
-                                        {data.orders.filter(order => order.payment && order.payment.reference).length} payments
+                                        {getFilteredData('payments').length} payments
                                     </span>
                                 </div>
                                 <div className="overflow-x-auto">
@@ -513,25 +542,23 @@ const AdminDashboard = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {data.orders
-                                                .filter(order => order.payment && order.payment.reference)
-                                                .map(order => (
-                                                    <tr key={order.payment.reference} className="border-t hover:bg-gray-50">
-                                                        <td className="p-3">{order.payment.reference}</td>
-                                                        <td className="p-3">#{order.order_id}</td>
-                                                        <td className="p-3">${order.payment.amount}</td>
-                                                        <td className="p-3">
-                                                            <span className={`px-2 py-1 rounded-full text-xs ${
-                                                                order.payment.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                                order.payment.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                                'bg-red-100 text-red-800'
-                                                            }`}>
-                                                                {order.payment.payment_status}
-                                                            </span>
-                                                        </td>
-                                                        <td className="p-3">{new Date(order.payment.created_at).toLocaleDateString()}</td>
-                                                    </tr>
-                                                ))}
+                                            {getFilteredData('payments').map(order => (
+                                                <tr key={order.payment.reference} className="border-t hover:bg-gray-50">
+                                                    <td className="p-3">{order.payment.reference || 'N/A'}</td>
+                                                    <td className="p-3">#{order.order_id}</td>
+                                                    <td className="p-3">${order.payment.amount}</td>
+                                                    <td className="p-3">
+                                                        <span className={`px-2 py-1 rounded-full text-xs ${
+                                                            order.payment.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                            order.payment.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                            'bg-red-100 text-red-800'
+                                                        }`}>
+                                                            {order.payment.payment_status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-3">{new Date(order.payment.created_at).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}</td>
+                                                </tr>
+                                            ))}
                                             {data.orders.filter(order => !order.payment || !order.payment.reference).length > 0 && (
                                                 <tr>
                                                     <td colSpan="5" className="p-3 text-gray-500 text-center">

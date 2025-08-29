@@ -18,6 +18,7 @@ import AdaminDashboard from './components/AdaminDashboard';
 import AddCategoryForm from './components/AddCategoryForm';
 import CreateOrderForm from './components/CreateOrderForm';
 import AddProductForm from './components/AddProductForm';
+import AdminOrderDetails from './components/AdminOrderDetails';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
       <Route path="/frontend_ai/AddCategoryForm" element={<AddCategoryForm />} />
       <Route path="/frontend_ai/AddProductForm" element={<AddProductForm />} />
       <Route path="/frontend_ai/CreateOrderForm" element={<CreateOrderForm />} />
+      <Route path="/frontend_ai/admin/orders/:orderId" element={<AdminOrderDetails />} />
       <Route path="/frontend_ai/login" element={<Login />} />
       <Route path="/frontend_ai/dashboard" element={<Dashboard />} />
       <Route path="/frontend_ai/signup" element={<Signup />} />

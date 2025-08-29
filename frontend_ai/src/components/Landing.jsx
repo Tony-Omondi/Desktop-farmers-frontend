@@ -25,6 +25,55 @@ const Landing = () => {
     }
   ];
 
+  // Gallery images with proper aspect ratios for better responsiveness
+  const galleryImages = [
+    {
+      src: 'https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      alt: 'Fresh vegetables at farmers market',
+      category: 'Produce'
+    },
+    {
+      src: 'https://images.unsplash.com/photo-1570996055360-d5c30deeb778?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      alt: 'Local farmers market stall',
+      category: 'Market'
+    },
+    {
+      src: 'https://images.unsplash.com/photo-1461354464878-ad92f492a5a0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      alt: 'Organic fruits display',
+      category: 'Produce'
+    },
+    {
+      src: 'https://images.unsplash.com/photo-1591722861017-928458cc4a00?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      alt: 'Farmers market community',
+      category: 'Community'
+    },
+    {
+      src: 'https://images.unsplash.com/photo-1591722861193-15533830c026?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      alt: 'Fresh bread at market',
+      category: 'Bakery'
+    },
+    {
+      src: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      alt: 'Colorful market scene',
+      category: 'Market'
+    },
+    {
+      src: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      alt: 'Local honey products',
+      category: 'Products'
+    },
+    {
+      src: 'https://images.unsplash.com/photo-1570996055360-d5c30deeb778?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      alt: 'Farmers market flowers',
+      category: 'Flowers'
+    }
+  ];
+
+  // Categories for gallery filtering
+  const categories = ['All', 'Produce', 'Market', 'Community', 'Bakery', 'Products', 'Flowers'];
+
+  const [activeCategory, setActiveCategory] = useState('All');
+
   useEffect(() => {
     // Handle scroll event for header
     const handleScroll = () => {
@@ -56,11 +105,16 @@ const Landing = () => {
     setIsMenuOpen(false);
   };
 
+  // Filter gallery images by category
+  const filteredGalleryImages = activeCategory === 'All' 
+    ? galleryImages 
+    : galleryImages.filter(image => image.category === activeCategory);
+
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}>
       {/* Modern Header */}
       <header className={`fixed w-full top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-md py-2' : 'bg-transparent py-4'} ${isMenuOpen ? 'bg-white' : ''}`}>
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center">
               <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white">
@@ -73,16 +127,16 @@ const Landing = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
             <button onClick={() => scrollToSection('about')} className="text-gray-800 font-medium hover:text-emerald-600 transition-colors duration-200">About</button>
-            <button onClick={() => scrollToSection('markets')} className="text-gray-800 font-medium hover:text-emerald-600 transition-colors duration-200">Markets</button>
+            <button onClick={() => scrollToSection('gallery')} className="text-gray-800 font-medium hover:text-emerald-600 transition-colors duration-200">Gallery</button>
             <button onClick={() => scrollToSection('testimonials')} className="text-gray-800 font-medium hover:text-emerald-600 transition-colors duration-200">Testimonials</button>
             <button onClick={() => scrollToSection('contact')} className="text-gray-800 font-medium hover:text-emerald-600 transition-colors duration-200">Contact</button>
           </nav>
           
           <div className="flex items-center space-x-3">
-            <Link to="/frontend_ai/login" className="hidden sm:block px-5 py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors duration-200 shadow-sm">
+            <Link to="/frontend_ai/login" className="hidden sm:block px-4 py-2 sm:px-5 sm:py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors duration-200 shadow-sm text-sm sm:text-base">
               Login
             </Link>
-            <Link to="/frontend_ai/signup" className="hidden sm:block px-5 py-2 rounded-lg bg-white text-emerald-700 font-semibold border border-emerald-600 hover:bg-gray-100 transition-colors duration-200 shadow-sm">
+            <Link to="/frontend_ai/signup" className="hidden sm:block px-4 py-2 sm:px-5 sm:py-2 rounded-lg bg-white text-emerald-700 font-semibold border border-emerald-600 hover:bg-gray-100 transition-colors duration-200 shadow-sm text-sm sm:text-base">
               Register
             </Link>
             
@@ -109,7 +163,7 @@ const Landing = () => {
           <div className="md:hidden bg-white border-t border-gray-200 shadow-lg">
             <div className="px-6 py-4 space-y-4">
               <button onClick={() => scrollToSection('about')} className="block w-full text-left py-2 text-gray-800 font-medium hover:text-emerald-600 transition-colors duration-200">About</button>
-              <button onClick={() => scrollToSection('markets')} className="block w-full text-left py-2 text-gray-800 font-medium hover:text-emerald-600 transition-colors duration-200">Markets</button>
+              <button onClick={() => scrollToSection('gallery')} className="block w-full text-left py-2 text-gray-800 font-medium hover:text-emerald-600 transition-colors duration-200">Gallery</button>
               <button onClick={() => scrollToSection('testimonials')} className="block w-full text-left py-2 text-gray-800 font-medium hover:text-emerald-600 transition-colors duration-200">Testimonials</button>
               <button onClick={() => scrollToSection('contact')} className="block w-full text-left py-2 text-gray-800 font-medium hover:text-emerald-600 transition-colors duration-200">Contact</button>
               <div className="pt-4 border-t border-gray-200 flex flex-col space-y-3">
@@ -141,19 +195,19 @@ const Landing = () => {
           <div className="absolute inset-0 bg-black/20 z-10"></div>
         </div>
         
-        <div className="relative z-20 max-w-7xl w-full px-6 mx-auto">
+        <div className="relative z-20 max-w-7xl w-full px-4 sm:px-6 mx-auto">
           <div className="max-w-2xl">
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight mb-4 animate-fade-in">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-4">
               {slides[currentSlide].title}
             </h1>
-            <p className="text-lg md:text-xl text-gray-800 mb-8 animate-fade-in delay-150">
+            <p className="text-base sm:text-lg md:text-xl text-gray-800 mb-8">
               {slides[currentSlide].description}
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 animate-fade-in delay-300">
-              <Link to="/frontend_ai/signup" className="px-8 py-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <Link to="/frontend_ai/signup" className="px-6 py-3 sm:px-8 sm:py-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-center text-sm sm:text-base">
                 Join Now
               </Link>
-              <button onClick={() => scrollToSection('about')} className="px-8 py-4 bg-white/90 text-gray-900 font-semibold rounded-lg hover:bg-white transition-all duration-300 border border-gray-200 hover:shadow-md transform hover:-translate-y-1">
+              <button onClick={() => scrollToSection('about')} className="px-6 py-3 sm:px-8 sm:py-4 bg-white/90 text-gray-900 font-semibold rounded-lg hover:bg-white transition-all duration-300 border border-gray-200 hover:shadow-md transform hover:-translate-y-1 text-sm sm:text-base">
                 Learn More
               </button>
             </div>
@@ -185,16 +239,16 @@ const Landing = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why Join Our Market</h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+      <section className="py-16 sm:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">Why Join Our Market</h2>
+            <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto">
               Partner with us to bring your farm's fresh produce to a thriving community of buyers.
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {[
               {
                 icon: (
@@ -224,12 +278,12 @@ const Landing = () => {
                 description: "Sell directly to local customers through our vibrant market network."
               }
             ].map((feature, index) => (
-              <div key={index} className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group">
-                <div className="w-16 h-16 bg-emerald-50 rounded-xl flex items-center justify-center mb-6 group-hover:bg-emerald-100 transition-colors duration-300">
+              <div key={index} className="bg-white p-6 sm:p-8 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-2 group">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 bg-emerald-50 rounded-xl flex items-center justify-center mb-4 sm:mb-6 group-hover:bg-emerald-100 transition-colors duration-300">
                   {feature.icon}
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
+                <p className="text-gray-600 text-sm sm:text-base">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -237,39 +291,39 @@ const Landing = () => {
       </section>
 
       {/* About Section */}
-      <section id="about" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Our Market Story</h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+      <section id="about" className="py-16 sm:py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">Our Market Story</h2>
+            <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto">
               Since 2010, we've connected farmers with communities, creating vibrant markets where fresh produce thrives.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 items-center">
             <div>
               <div className="bg-white p-6 rounded-2xl shadow-lg">
-                <h3 className="text-2xl font-semibold text-gray-900 mb-4">Our Mission</h3>
-                <p className="text-gray-600 mb-6">
+                <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">Our Mission</h3>
+                <p className="text-gray-600 mb-6 text-sm sm:text-base">
                   We aim to foster sustainable agriculture by bridging the gap between local farmers and conscious consumers. Our markets provide a platform for organic and locally grown produce, promoting healthier communities and a greener planet.
                 </p>
-                <h3 className="text-2xl font-semibold text-gray-900 mb-4">Our History</h3>
-                <p className="text-gray-600">
+                <h3 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">Our History</h3>
+                <p className="text-gray-600 text-sm sm:text-base">
                   Founded in 2010, Farmers Market began as a small initiative to support local growers. Today, we operate multiple markets across the region, helping thousands of farmers reach customers who value quality and sustainability.
                 </p>
               </div>
             </div>
             <div className="bg-emerald-600 rounded-2xl overflow-hidden shadow-xl">
               <div className="aspect-video bg-gray-200 rounded-2xl flex items-center justify-center">
-                <svg className="w-24 h-24 text-emerald-200" fill="currentColor" viewBox="0 0 256 256">
+                <svg className="w-16 h-16 sm:w-24 sm:h-24 text-emerald-200" fill="currentColor" viewBox="0 0 256 256">
                   <path d="M243.33,90.91,210,56.5A16,16,0,0,0,198.46,52H160V40a12,12,0,0,0-12-12H52A12,12,0,0,0,40,40V180a12,12,0,0,0,12,12h20v28a12,12,0,0,0,12,12H208a12,12,0,0,0,12-12V159.44a16.07,16.07,0,0,0-4.67-11.37ZM160,68h30.46l16,16H160ZM196,212H96V192h76a12,12,0,0,1,12,12Zm20-52H160V140h56Z"></path>
                 </svg>
               </div>
             </div>
           </div>
-          <div className="text-center mt-12">
-            <Link to="/frontend_ai/signup" className="px-8 py-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center">
+          <div className="text-center mt-10 sm:mt-12">
+            <Link to="/frontend_ai/signup" className="px-6 py-3 sm:px-8 sm:py-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center text-sm sm:text-base">
               Join Our Community
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
               </svg>
             </Link>
@@ -277,66 +331,70 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Marketplace Gallery */}
-      <section id="markets" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Our Vibrant Markets</h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Discover the bustling marketplaces where your farm's produce can shine.
+      {/* Gallery Section */}
+      <section id="gallery" className="py-16 sm:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">Market Gallery</h2>
+            <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto">
+              Explore the vibrant atmosphere of our farmers markets through our gallery.
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { name: "Downtown Farmers Market", image: "/assets/images/market4.jpg" },
-              { name: "Riverside Market", image: "/assets/images/market5.jpg" },
-              { name: "Green Valley Market", image: "/assets/images/market6.jpg" },
-              { name: "Harvest Square", image: "/assets/images/market7.jpg" },
-              { name: "Sunset Market", image: "/assets/images/market8.jpg" },
-              { name: "Orchard Lane", image: "/assets/images/market9.jpg" },
-              { name: "Community Market", image: "/assets/images/market10.jpg" },
-              { name: "Fresh Fields Market", image: "/assets/images/market11.jpg" }
-            ].map((market, index) => (
-              <div key={index} className="group cursor-pointer">
-                <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden mb-4 relative">
-                  <div className="w-full h-full bg-gray-300 animate-pulse"></div>
-                  <img 
-                    src={market.image} 
-                    alt={market.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 absolute inset-0"
-                    onLoad={(e) => e.target.classList.remove('opacity-0')}
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <span className="text-white font-medium text-center px-2">View Market</span>
-                  </div>
-                </div>
-                <h3 className="font-medium text-gray-900 group-hover:text-emerald-600 transition-colors duration-200">{market.name}</h3>
-              </div>
+          {/* Gallery Filter */}
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-8">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setActiveCategory(category)}
+                className={`px-4 py-2 rounded-full text-sm sm:text-base transition-colors duration-200 ${
+                  activeCategory === category
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {category}
+              </button>
             ))}
           </div>
           
-          <div className="text-center mt-12">
-            <button className="px-8 py-3 bg-white text-gray-900 font-semibold rounded-lg hover:bg-gray-50 transition-all duration-300 border border-gray-200 shadow-sm hover:shadow-md">
-              Explore All Markets
-            </button>
+          {/* Gallery Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            {filteredGalleryImages.map((image, index) => (
+              <div key={index} className="group cursor-pointer overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300">
+                <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                  <img 
+                    src={image.src} 
+                    alt={image.alt}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <span className="text-white font-medium text-center px-2 text-sm sm:text-base">View Image</span>
+                  </div>
+                </div>
+                <div className="p-3 sm:p-4">
+                  <p className="text-gray-700 text-sm sm:text-base">{image.alt}</p>
+                  <span className="text-xs text-emerald-600 font-medium">{image.category}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-emerald-600 text-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      <section className="py-12 sm:py-16 bg-emerald-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center">
             {[
               { number: "500+", label: "Active Farmers" },
               { number: "25", label: "Market Locations" },
               { number: "10K+", label: "Weekly Visitors" },
               { number: "15", label: "Years of Service" }
             ].map((stat, index) => (
-              <div key={index} className="p-6">
-                <div className="text-4xl md:text-5xl font-bold mb-2">{stat.number}</div>
-                <div className="text-emerald-100">{stat.label}</div>
+              <div key={index} className="p-4 sm:p-6">
+                <div className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2">{stat.number}</div>
+                <div className="text-emerald-100 text-sm sm:text-base">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -344,16 +402,16 @@ const Landing = () => {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="py-20 bg-emerald-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">What Farmers Say</h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+      <section id="testimonials" className="py-16 sm:py-20 bg-emerald-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">What Farmers Say</h2>
+            <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto">
               Hear from farmers who've grown their reach with our markets.
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {[
               {
                 quote: "This market transformed my small farm into a thriving business!",
@@ -374,24 +432,24 @@ const Landing = () => {
                 image: "/assets/images/farmer3.jpg"
               }
             ].map((testimonial, index) => (
-              <div key={index} className="bg-white p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow duration-300">
+              <div key={index} className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm hover:shadow-lg transition-shadow duration-300">
                 <div className="text-emerald-500 mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 256 256">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 256 256" className="w-6 h-6 sm:w-8 sm:h-8">
                     <path d="M140,56H40A16,16,0,0,0,24,72V184a16,16,0,0,0,16,16h84.23L164,240V200h20a16,16,0,0,0,16-16V72A16,16,0,0,0,180,56Zm0,128H40V72h100v88.23L128.47,168H140Zm40,0H180V72h20V184Z"></path>
                   </svg>
                 </div>
-                <p className="text-gray-700 text-lg mb-6">"{testimonial.quote}"</p>
+                <p className="text-gray-700 text-base sm:text-lg mb-6">"{testimonial.quote}"</p>
                 <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gray-200 rounded-full mr-4 overflow-hidden">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full mr-3 sm:mr-4 overflow-hidden">
                     <div className="w-full h-full bg-gray-300 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 256 256">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="currentColor" viewBox="0 0 256 256">
                         <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-36.06-28.75,48,48,0,1,0-59.4,0,79.66,79.66,0,0,0-36.06,28.75,88,88,0,1,1,131.52,0Z"></path>
                       </svg>
                     </div>
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">{testimonial.author}</p>
-                    <p className="text-gray-500 text-sm">{testimonial.role}</p>
+                    <p className="font-semibold text-gray-900 text-sm sm:text-base">{testimonial.author}</p>
+                    <p className="text-gray-500 text-xs sm:text-sm">{testimonial.role}</p>
                   </div>
                 </div>
               </div>
@@ -401,17 +459,17 @@ const Landing = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-emerald-600">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Ready to Join Our Market?</h2>
-          <p className="text-lg text-emerald-100 max-w-3xl mx-auto mb-8">
+      <section className="py-16 sm:py-20 bg-emerald-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 sm:mb-6">Ready to Join Our Market?</h2>
+          <p className="text-base sm:text-lg text-emerald-100 max-w-3xl mx-auto mb-6 sm:mb-8">
             Register your farm today and start connecting with customers who value fresh, local produce.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/frontend_ai/signup" className="px-8 py-4 bg-white text-emerald-600 font-semibold rounded-lg hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+            <Link to="/frontend_ai/signup" className="px-6 py-3 sm:px-8 sm:py-4 bg-white text-emerald-600 font-semibold rounded-lg hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl text-sm sm:text-base">
               Create Account
             </Link>
-            <button onClick={() => scrollToSection('contact')} className="px-8 py-4 bg-transparent text-white font-semibold rounded-lg hover:bg-white/10 transition-all duration-300 border border-white">
+            <button onClick={() => scrollToSection('contact')} className="px-6 py-3 sm:px-8 sm:py-4 bg-transparent text-white font-semibold rounded-lg hover:bg-white/10 transition-all duration-300 border border-white text-sm sm:text-base">
               Contact Us
             </button>
           </div>
@@ -419,41 +477,41 @@ const Landing = () => {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Get in Touch</h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+      <section id="contact" className="py-16 sm:py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">Get in Touch</h2>
+            <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto">
               Have questions or want to join our network? Send us a message, and we'll get back to you soon.
             </p>
           </div>
-          <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
+          <div className="max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-lg border border-gray-100">
             <form>
-              <div className="mb-6">
-                <label htmlFor="name" className="block text-gray-900 font-medium mb-2">Name</label>
+              <div className="mb-4 sm:mb-6">
+                <label htmlFor="name" className="block text-gray-900 font-medium mb-2 text-sm sm:text-base">Name</label>
                 <input
                   type="text"
                   id="name"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 transition-colors duration-200"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 transition-colors duration-200 text-sm sm:text-base"
                   placeholder="Your Name"
                   required
                 />
               </div>
-              <div className="mb-6">
-                <label htmlFor="email" className="block text-gray-900 font-medium mb-2">Email</label>
+              <div className="mb-4 sm:mb-6">
+                <label htmlFor="email" className="block text-gray-900 font-medium mb-2 text-sm sm:text-base">Email</label>
                 <input
                   type="email"
                   id="email"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 transition-colors duration-200"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 transition-colors duration-200 text-sm sm:text-base"
                   placeholder="Your Email"
                   required
                 />
               </div>
-              <div className="mb-6">
-                <label htmlFor="message" className="block text-gray-900 font-medium mb-2">Message</label>
+              <div className="mb-4 sm:mb-6">
+                <label htmlFor="message" className="block text-gray-900 font-medium mb-2 text-sm sm:text-base">Message</label>
                 <textarea
                   id="message"
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 transition-colors duration-200"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-emerald-600 transition-colors duration-200 text-sm sm:text-base"
                   rows="5"
                   placeholder="Your Message"
                   required
@@ -462,7 +520,7 @@ const Landing = () => {
               <div className="text-center">
                 <button
                   type="submit"
-                  className="px-8 py-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  className="px-6 py-3 sm:px-8 sm:py-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl text-sm sm:text-base"
                 >
                   Send Message
                 </button>
@@ -473,27 +531,27 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+      <footer className="bg-gray-900 text-white py-12 sm:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-10 sm:mb-12">
             <div>
-              <h3 className="text-lg font-semibold mb-4">Farmers Market</h3>
-              <p className="text-gray-400">
+              <h3 className="text-lg font-semibold mb-3 sm:mb-4">Farmers Market</h3>
+              <p className="text-gray-400 text-sm sm:text-base">
                 Connecting farmers with communities since 2010.
               </p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
+              <h3 className="text-lg font-semibold mb-3 sm:mb-4">Quick Links</h3>
               <ul className="space-y-2">
-                <li><button onClick={() => scrollToSection('about')} className="text-gray-400 hover:text-white transition-colors duration-200">About</button></li>
-                <li><button onClick={() => scrollToSection('markets')} className="text-gray-400 hover:text-white transition-colors duration-200">Markets</button></li>
-                <li><button onClick={() => scrollToSection('testimonials')} className="text-gray-400 hover:text-white transition-colors duration-200">Testimonials</button></li>
-                <li><button onClick={() => scrollToSection('contact')} className="text-gray-400 hover:text-white transition-colors duration-200">Contact</button></li>
+                <li><button onClick={() => scrollToSection('about')} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm sm:text-base">About</button></li>
+                <li><button onClick={() => scrollToSection('gallery')} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm sm:text-base">Gallery</button></li>
+                <li><button onClick={() => scrollToSection('testimonials')} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm sm:text-base">Testimonials</button></li>
+                <li><button onClick={() => scrollToSection('contact')} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm sm:text-base">Contact</button></li>
               </ul>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4">Contact</h3>
-              <ul className="space-y-2 text-gray-400">
+              <h3 className="text-lg font-semibold mb-3 sm:mb-4">Contact</h3>
+              <ul className="space-y-2 text-gray-400 text-sm sm:text-base">
                 <li>123 Market Lane</li>
                 <li>Green Valley, CA 90210</li>
                 <li>(555) 123-4567</li>
@@ -501,27 +559,27 @@ const Landing = () => {
               </ul>
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-4">Follow Us</h3>
+              <h3 className="text-lg font-semibold mb-3 sm:mb-4">Follow Us</h3>
               <div className="flex space-x-4">
                 <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" className="w-5 h-5 sm:w-6 sm:h-6">
                     <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm8,191.63V152h24a8,8,0,0,0,0-16H136V112a16,16,0,0,1,16-16h16a8,8,0,0,0,0-16H152a32,32,0,0,0-32,32v24H96a8,8,0,0,0,0,16h24v63.63a88,88,0,1,1,16,0Z"></path>
                   </svg>
                 </a>
                 <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" className="w-5 h-5 sm:w-6 sm:h-6">
                     <path d="M247.39,68.94A8,8,0,0,0,240,64H209.57A48.66,48.66,0,0,0,168.1,40a46.91,46.91,0,0,0-33.75,13.7A47.9,47.9,0,0,0,120,88v6.09C79.74,83.47,46.81,50.72,46.46,50.37a8,8,0,0,0-13.65,4.92c-4.31,47.79,9.57,79.77,22,98.18a110.93,110.93,0,0,0,21.88,24.2c-15.23,17.53-39.21,26.74-39.47,26.84a8,8,0,0,0-3.85,11.93c.75,1.12,3.75,5.05,11.08,8.72C53.51,229.7,65.48,232,80,232c70.67,0,129.72-54.42,135.75-124.44l29.91-29.9A8,8,0,0,0,247.39,68.94Zm-45,29.41a8,8,0,0,0-2.32,5.14C196,166.58,143.28,216,80,216c-10.56,0-18-1.4-23.22-3.08,11.51-6.25,27.56-17,37.88-32.48A8,8,0,0,0,92,169.08c-.47-.27-43.91-26.34-44-96,16,13,45.25,33.17,78.67,38.79A8,8,0,0,0,136,104V88a32,32,0,0,1,9.6-22.92A30.94,30.94,0,0,1,167.9,56c12.66.16,24.49,7.88,29.44,19.21A8,8,0,0,0,204.67,80h16Z"></path>
                   </svg>
                 </a>
                 <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256" className="w-5 h-5 sm:w-6 sm:h-6">
                     <path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160ZM176,24H80A56.06,56.06,0,0,0,24,80v96a56.06,56.06,0,0,0,56,56h96a56.06,56.06,0,0,0,56-56V80A56.06,56.06,0,0,0,176,24Zm40,152a40,40,0,0,1-40,40H80a40,40,0,0,1-40-40V80A40,40,0,0,1,80,40h96a40,40,0,0,1,40,40ZM192,76a12,12,0,1,1-12-12A12,12,0,0,1,192,76Z"></path>
                   </svg>
                 </a>
               </div>
             </div>
           </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
+          <div className="border-t border-gray-800 pt-6 sm:pt-8 text-center text-gray-400 text-sm sm:text-base">
             <p>© 2025 Farmers Market. All rights reserved.</p>
           </div>
         </div>

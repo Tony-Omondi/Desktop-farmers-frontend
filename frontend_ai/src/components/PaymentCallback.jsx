@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'https://farmers-marketplace-n2qm.onrender.com';
 
 const PaymentCallback = () => {
   const [error, setError] = useState('');
@@ -30,9 +30,19 @@ const PaymentCallback = () => {
           headers: { Authorization: `Bearer ${token.trim()}` },
           params: { reference },
         });
-        console.log('Payment callback response:', JSON.stringify(response.data, null, 2));
         if (response.data.status) {
-          navigate('/frontend_ai/payment-success', { state: { orderId: response.data.order_id } });
+          // Fetch the order to get its pk (id)
+          const orderResponse = await axios.get(`${BASE_URL}/api/orders/orders/`, {
+            headers: { Authorization: `Bearer ${token.trim()}` },
+            params: { order_id: response.data.order_id },
+          });
+          const order = orderResponse.data.find((o) => o.order_id === response.data.order_id);
+          if (order) {
+            navigate('/frontend_ai/payment-success', { state: { orderId: order.id } });
+          } else {
+            setError('Order not found.');
+            setTimeout(() => navigate('/frontend_ai/cart'), 3000);
+          }
         } else {
           setError(response.data.message || 'Payment verification failed.');
           setTimeout(() => navigate('/frontend_ai/cart'), 3000);
