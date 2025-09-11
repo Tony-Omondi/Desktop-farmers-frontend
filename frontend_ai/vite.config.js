@@ -7,5 +7,10 @@ export default defineConfig({
   base: '/frontend_ai/',
   server: {
     port: 5173,
-  },
+    host: true,              // Serve on all network interfaces
+    allowedHosts: 'all',     // Allow requests from any host
+    cors: true,              // Allow all CORS requests
+    strictPort: false,       // Let Vite pick another port if 5173 is busy
+    open: true,              // Auto-open browser
+  }
 })
