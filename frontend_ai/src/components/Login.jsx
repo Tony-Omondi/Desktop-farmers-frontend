@@ -30,7 +30,7 @@ const Login = () => {
       localStorage.setItem('refresh_token', refreshToken);
       console.log('Stored access_token:', accessToken);
       console.log('Stored refresh_token:', refreshToken);
-      navigate('/frontend_ai/dashboard');
+      navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err.response?.data);
       setError(err.response?.data?.detail || 'Invalid credentials. Please try again.');
@@ -114,14 +114,14 @@ const Login = () => {
         </form>
 
         <div className="mt-4 text-center">
-          <Link to="/frontend_ai/forgot-password" className="text-sm text-emerald-600 hover:text-emerald-500">
+          <Link to="/forgot-password" className="text-sm text-emerald-600 hover:text-emerald-500">
             Forgot password?
           </Link>
         </div>
         <div className="mt-2 text-center">
           <p className="text-sm text-gray-600">
             Don't have an account?{' '}
-            <Link to="/frontend_ai/signup" className="text-emerald-600 hover:text-emerald-500 font-medium">
+            <Link to="/signup" className="text-emerald-600 hover:text-emerald-500 font-medium">
               Sign up
             </Link>
           </p>

@@ -133,10 +133,10 @@ const Landing = () => {
           </nav>
           
           <div className="flex items-center space-x-3">
-            <Link to="/frontend_ai/login" className="hidden sm:block px-4 py-2 sm:px-5 sm:py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors duration-200 shadow-sm text-sm sm:text-base">
+            <Link to="/login" className="hidden sm:block px-4 py-2 sm:px-5 sm:py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors duration-200 shadow-sm text-sm sm:text-base">
               Login
             </Link>
-            <Link to="/frontend_ai/signup" className="hidden sm:block px-4 py-2 sm:px-5 sm:py-2 rounded-lg bg-white text-emerald-700 font-semibold border border-emerald-600 hover:bg-gray-100 transition-colors duration-200 shadow-sm text-sm sm:text-base">
+            <Link to="/signup" className="hidden sm:block px-4 py-2 sm:px-5 sm:py-2 rounded-lg bg-white text-emerald-700 font-semibold border border-emerald-600 hover:bg-gray-100 transition-colors duration-200 shadow-sm text-sm sm:text-base">
               Register
             </Link>
             
@@ -167,10 +167,10 @@ const Landing = () => {
               <button onClick={() => scrollToSection('testimonials')} className="block w-full text-left py-2 text-gray-800 font-medium hover:text-emerald-600 transition-colors duration-200">Testimonials</button>
               <button onClick={() => scrollToSection('contact')} className="block w-full text-left py-2 text-gray-800 font-medium hover:text-emerald-600 transition-colors duration-200">Contact</button>
               <div className="pt-4 border-t border-gray-200 flex flex-col space-y-3">
-                <Link to="/frontend_ai/login" className="px-5 py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors duration-200 shadow-sm text-center">
+                <Link to="/login" className="px-5 py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors duration-200 shadow-sm text-center">
                   Login
                 </Link>
-                <Link to="/frontend_ai/signup" className="px-5 py-2 rounded-lg bg-white text-emerald-700 font-semibold border border-emerald-600 hover:bg-gray-100 transition-colors duration-200 shadow-sm text-center">
+                <Link to="/signup" className="px-5 py-2 rounded-lg bg-white text-emerald-700 font-semibold border border-emerald-600 hover:bg-gray-100 transition-colors duration-200 shadow-sm text-center">
                   Register
                 </Link>
               </div>
@@ -204,7 +204,7 @@ const Landing = () => {
               {slides[currentSlide].description}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <Link to="/frontend_ai/signup" className="px-6 py-3 sm:px-8 sm:py-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-center text-sm sm:text-base">
+              <Link to="/signup" className="px-6 py-3 sm:px-8 sm:py-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-center text-sm sm:text-base">
                 Join Now
               </Link>
               <button onClick={() => scrollToSection('about')} className="px-6 py-3 sm:px-8 sm:py-4 bg-white/90 text-gray-900 font-semibold rounded-lg hover:bg-white transition-all duration-300 border border-gray-200 hover:shadow-md transform hover:-translate-y-1 text-sm sm:text-base">
@@ -321,7 +321,7 @@ const Landing = () => {
             </div>
           </div>
           <div className="text-center mt-10 sm:mt-12">
-            <Link to="/frontend_ai/signup" className="px-6 py-3 sm:px-8 sm:py-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center text-sm sm:text-base">
+            <Link to="/signup" className="px-6 py-3 sm:px-8 sm:py-4 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl inline-flex items-center text-sm sm:text-base">
               Join Our Community
               <svg className="w-4 h-4 sm:w-5 sm:h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
@@ -466,7 +466,7 @@ const Landing = () => {
             Register your farm today and start connecting with customers who value fresh, local produce.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-            <Link to="/frontend_ai/signup" className="px-6 py-3 sm:px-8 sm:py-4 bg-white text-emerald-600 font-semibold rounded-lg hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl text-sm sm:text-base">
+            <Link to="/signup" className="px-6 py-3 sm:px-8 sm:py-4 bg-white text-emerald-600 font-semibold rounded-lg hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl text-sm sm:text-base">
               Create Account
             </Link>
             <button onClick={() => scrollToSection('contact')} className="px-6 py-3 sm:px-8 sm:py-4 bg-transparent text-white font-semibold rounded-lg hover:bg-white/10 transition-all duration-300 border border-white text-sm sm:text-base">

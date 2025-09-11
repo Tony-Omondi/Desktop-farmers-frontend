@@ -14,7 +14,7 @@ const VerifyOTP = () => {
   useEffect(() => {
     if (!email || !purpose) {
       setError('Invalid request. Please try again.');
-      setTimeout(() => navigate('/frontend_ai/login'), 3000);
+      setTimeout(() => navigate('/login'), 3000);
     }
   }, [email, purpose, navigate]);
 
@@ -38,10 +38,10 @@ const VerifyOTP = () => {
         localStorage.setItem('access_token', response.data.tokens.access);
         localStorage.setItem('refresh_token', response.data.tokens.refresh);
         setMessage('Email verified successfully! Redirecting to dashboard...');
-        setTimeout(() => navigate('/frontend_ai/dashboard'), 2000);
+        setTimeout(() => navigate('/dashboard'), 2000);
       } else if (purpose === 'password_reset') {
         setMessage('OTP verified! Redirecting to set new password...');
-        setTimeout(() => navigate('/frontend_ai/reset-password', { state: { email } }), 2000);
+        setTimeout(() => navigate('/reset-password', { state: { email } }), 2000);
       }
     } catch (err) {
       setError(err.response?.data?.detail || 'Invalid or expired OTP. Please try again.');
@@ -106,7 +106,7 @@ const VerifyOTP = () => {
         </form>
         <div className="mt-6 text-center">
           <button
-            onClick={() => navigate('/frontend_ai/login')}
+            onClick={() => navigate('/login')}
             className="text-emerald-600 hover:text-emerald-800 font-medium text-sm inline-flex items-center"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -20,7 +20,7 @@ const Orders = () => {
         const token = localStorage.getItem('access_token');
         if (!token) {
           setError('Please log in to view your orders.');
-          navigate('/frontend_ai/login');
+          navigate('/login');
           return;
         }
 
@@ -36,7 +36,7 @@ const Orders = () => {
         if (err.response?.status === 401) {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
-          navigate('/frontend_ai/login');
+          navigate('/login');
         }
       } finally {
         setIsLoading(false);
@@ -144,7 +144,7 @@ const Orders = () => {
             <p className="text-gray-600">Track and manage all your orders in one place</p>
           </div>
           <button
-            onClick={() => navigate('/frontend_ai/dashboard')}
+            onClick={() => navigate('/dashboard')}
             className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors mt-4 lg:mt-0"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

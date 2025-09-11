@@ -103,7 +103,7 @@ const ForgotPassword = () => {
         {/* Back to Login Link */}
         <div className="mt-6 text-center">
           <button 
-            onClick={() => navigate('/frontend_ai/login')} 
+            onClick={() => navigate('/login')} 
             className="text-indigo-600 hover:text-indigo-800 font-medium text-sm inline-flex items-center"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

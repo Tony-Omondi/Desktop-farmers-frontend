@@ -21,7 +21,7 @@ const Profile = () => {
         const token = localStorage.getItem('access_token');
         if (!token) {
           setError('Please log in to view your profile.');
-          navigate('/frontend_ai/login');
+          navigate('/login');
           return;
         }
 
@@ -47,7 +47,7 @@ const Profile = () => {
         if (err.response?.status === 401) {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
-          navigate('/frontend_ai/login');
+          navigate('/login');
         }
       } finally {
         setIsLoading(false);
@@ -87,7 +87,7 @@ const Profile = () => {
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-    navigate('/frontend_ai/login');
+    navigate('/login');
   };
 
   const formatPrice = (price) => {
@@ -116,7 +116,7 @@ const Profile = () => {
             <p className="text-gray-600">Manage your account details and view your activity</p>
           </div>
           <button
-            onClick={() => navigate('/frontend_ai/dashboard')}
+            onClick={() => navigate('/dashboard')}
             className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors mt-4 lg:mt-0"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,7 +196,7 @@ const Profile = () => {
                 <div className="mt-8 flex justify-end space-x-3">
                   <button
                     type="button"
-                    onClick={() => navigate('/frontend_ai/dashboard')}
+                    onClick={() => navigate('/dashboard')}
                     className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
                   >
                     Cancel

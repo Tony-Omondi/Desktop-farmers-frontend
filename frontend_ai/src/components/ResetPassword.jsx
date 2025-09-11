@@ -72,7 +72,7 @@ const ResetPassword = () => {
       setOtp('');
       setNewPassword('');
       setConfirmPassword('');
-      setTimeout(() => navigate('/frontend_ai/login'), 2000);
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to reset password. Please try again.');
     } finally {
@@ -179,7 +179,7 @@ const ResetPassword = () => {
         </form>
         <div className="mt-6 text-center">
           <button
-            onClick={() => navigate('/frontend_ai/login')}
+            onClick={() => navigate('/login')}
             className="text-emerald-600 hover:text-emerald-800 font-medium text-sm inline-flex items-center"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

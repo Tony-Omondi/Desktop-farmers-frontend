@@ -26,7 +26,7 @@ const Checkout = () => {
     const token = localStorage.getItem('access_token');
     if (!token) {
       setError('Please log in to proceed to checkout.');
-      navigate('/frontend_ai/login');
+      navigate('/login');
       return null;
     }
     return token.trim();
@@ -84,7 +84,7 @@ const Checkout = () => {
       if (err.response?.status === 401) {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        navigate('/frontend_ai/login');
+        navigate('/login');
       }
     } finally {
       setIsLoading(false);
@@ -176,7 +176,7 @@ const Checkout = () => {
             <p className="text-sm">{error}</p>
           </div>
           <button
-            onClick={() => navigate('/frontend_ai/cart')}
+            onClick={() => navigate('/cart')}
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300"
           >
             Back to Cart
@@ -207,7 +207,7 @@ const Checkout = () => {
           <div className="text-center">
             <p className="text-gray-500 mb-4">Your cart is empty.</p>
             <button
-              onClick={() => navigate('/frontend_ai/dashboard')}
+              onClick={() => navigate('/dashboard')}
               className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700"
             >
               Shop Now
@@ -290,7 +290,7 @@ const Checkout = () => {
         
         <div className="text-center mt-6">
           <button
-            onClick={() => navigate('/frontend_ai/cart')}
+            onClick={() => navigate('/cart')}
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
           >
             Back to Cart

@@ -15,7 +15,7 @@ const PaymentCallback = () => {
       const reference = params.get('reference');
       if (!reference) {
         setError('No payment reference provided.');
-        setTimeout(() => navigate('/frontend_ai/cart'), 3000);
+        setTimeout(() => navigate('/cart'), 3000);
         return;
       }
 
@@ -23,7 +23,7 @@ const PaymentCallback = () => {
         const token = localStorage.getItem('access_token');
         if (!token) {
           setError('Please log in to verify payment.');
-          navigate('/frontend_ai/login');
+          navigate('/login');
           return;
         }
         const response = await axios.get(`${BASE_URL}/api/orders/orders/payment/callback/`, {
@@ -38,19 +38,19 @@ const PaymentCallback = () => {
           });
           const order = orderResponse.data.find((o) => o.order_id === response.data.order_id);
           if (order) {
-            navigate('/frontend_ai/payment-success', { state: { orderId: order.id } });
+            navigate('/payment-success', { state: { orderId: order.id } });
           } else {
             setError('Order not found.');
-            setTimeout(() => navigate('/frontend_ai/cart'), 3000);
+            setTimeout(() => navigate('/cart'), 3000);
           }
         } else {
           setError(response.data.message || 'Payment verification failed.');
-          setTimeout(() => navigate('/frontend_ai/cart'), 3000);
+          setTimeout(() => navigate('/cart'), 3000);
         }
       } catch (err) {
         console.error('Payment callback error:', err.response?.data || err.message);
         setError(err.response?.data?.message || 'Failed to verify payment.');
-        setTimeout(() => navigate('/frontend_ai/cart'), 3000);
+        setTimeout(() => navigate('/cart'), 3000);
       }
     };
 

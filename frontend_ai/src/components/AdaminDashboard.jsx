@@ -30,7 +30,7 @@ const AdminDashboard = () => {
                 setIsLoading(true);
                 const accessToken = localStorage.getItem('access_token');
                 if (!accessToken) {
-                    navigate('/frontend_ai/adamin/login');
+                    navigate('/adamin/login');
                     return;
                 }
                 const response = await axios.get(`${BASE_URL}/api/adamin/dashboard/`, {
@@ -56,7 +56,7 @@ const AdminDashboard = () => {
                 if (err.response?.status === 401) {
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('refresh_token');
-                    navigate('/frontend_ai/adamin/login');
+                    navigate('/adamin/login');
                 }
             } finally {
                 setIsLoading(false);
@@ -194,7 +194,7 @@ const AdminDashboard = () => {
                         onClick={() => {
                             localStorage.removeItem('access_token');
                             localStorage.removeItem('refresh_token');
-                            navigate('/frontend_ai/adamin/login');
+                            navigate('/adamin/login');
                         }}
                         className="mt-2 md:mt-0 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
                     >
@@ -508,7 +508,7 @@ const AdminDashboard = () => {
                                                     <td className="p-3">{new Date(order.created_at).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}</td>
                                                     <td className="p-3">
                                                         <button
-                                                            onClick={() => navigate(`/frontend_ai/admin/orders/${order.order_id}`)}
+                                                            onClick={() => navigate(`/admin/orders/${order.order_id}`)}
                                                             className="text-emerald-600 hover:text-emerald-800 text-sm font-medium"
                                                         >
                                                             View Details

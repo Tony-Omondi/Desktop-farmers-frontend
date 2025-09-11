@@ -21,7 +21,7 @@ const Cart = () => {
         const token = localStorage.getItem('access_token');
         if (!token) {
           setError('Please log in to view your cart.');
-          navigate('/frontend_ai/login');
+          navigate('/login');
           return;
         }
 
@@ -57,7 +57,7 @@ const Cart = () => {
           setError('Session expired. Please log in again.');
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
-          navigate('/frontend_ai/login');
+          navigate('/login');
         } else {
           setError(err.response?.data?.detail || 'Failed to fetch cart.');
         }
@@ -189,7 +189,7 @@ const Cart = () => {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Your Shopping Cart</h1>
           <button
-            onClick={() => navigate('/frontend_ai/dashboard')}
+            onClick={() => navigate('/dashboard')}
             className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -235,7 +235,7 @@ const Cart = () => {
             </svg>
             <p className="text-gray-500 text-lg mb-4">Your cart is empty</p>
             <a
-              href="/frontend_ai/dashboard"
+              href="/dashboard"
               className="inline-flex items-center px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -358,13 +358,13 @@ const Cart = () => {
               {/* Action Buttons */}
               <div className="mt-8 flex flex-col sm:flex-row gap-4">
                 <a
-                  href="/frontend_ai/dashboard"
+                  href="/dashboard"
                   className="flex-1 px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 text-center font-medium transition-colors"
                 >
                   Continue Shopping
                 </a>
                 <a
-                  href="/frontend_ai/checkout"
+                  href="/checkout"
                   className="flex-1 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-center font-medium transition-colors"
                 >
                   Proceed to Checkout

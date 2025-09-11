@@ -14,10 +14,10 @@ const GoogleCallback = () => {
         });
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        navigate('/frontend_ai/dashboard');
+        navigate('/dashboard');
       } catch (err) {
         console.error('Google login failed:', err);
-        navigate('/frontend_ai/login', { state: { error: 'Google login failed. Please try again.' } });
+        navigate('/login', { state: { error: 'Google login failed. Please try again.' } });
       }
     };
 

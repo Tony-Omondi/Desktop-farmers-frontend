@@ -36,7 +36,7 @@ const AdaminLogin = () => {
             });
             console.log('User response:', userResponse.data);
             if (userResponse.data.is_staff && userResponse.data.is_active) {
-                navigate('/frontend_ai/adamin/dashboard');
+                navigate('/adamin/dashboard');
             } else {
                 setError('You are not authorized to access the admin dashboard.');
                 localStorage.removeItem('access_token');
@@ -119,7 +119,7 @@ const AdaminLogin = () => {
                     </button>
                 </form>
                 <div className="mt-4 text-center">
-                    <Link to="/frontend_ai/forgot-password" className="text-sm text-emerald-600 hover:text-emerald-500">
+                    <Link to="/forgot-password" className="text-sm text-emerald-600 hover:text-emerald-500">
                         Forgot password?
                     </Link>
                 </div>

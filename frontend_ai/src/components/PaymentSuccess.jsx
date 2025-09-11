@@ -18,7 +18,7 @@ const PaymentSuccess = () => {
         const token = localStorage.getItem('access_token');
         if (!token) {
           setError('Please log in to view your order.');
-          navigate('/frontend_ai/login');
+          navigate('/login');
           return;
         }
 
@@ -45,7 +45,7 @@ const PaymentSuccess = () => {
         if (err.response?.status === 401) {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
-          navigate('/frontend_ai/login');
+          navigate('/login');
         }
       } finally {
         setIsLoading(false);
@@ -272,13 +272,13 @@ const PaymentSuccess = () => {
             </button>
           )}
           <button
-            onClick={() => navigate('/frontend_ai/orders')}
+            onClick={() => navigate('/orders')}
             className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
           >
             View All Orders
           </button>
           <button
-            onClick={() => navigate('/frontend_ai/dashboard')}
+            onClick={() => navigate('/dashboard')}
             className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
           >
             Back to Dashboard

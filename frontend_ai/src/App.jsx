@@ -23,25 +23,25 @@ import AdminOrderDetails from './components/AdminOrderDetails';
 function App() {
   return (
     <Routes>
-      <Route path="/frontend_ai/" element={<Landing />} />
-      <Route path="/frontend_ai/AddCategoryForm" element={<AddCategoryForm />} />
-      <Route path="/frontend_ai/AddProductForm" element={<AddProductForm />} />
-      <Route path="/frontend_ai/CreateOrderForm" element={<CreateOrderForm />} />
-      <Route path="/frontend_ai/admin/orders/:orderId" element={<AdminOrderDetails />} />
-      <Route path="/frontend_ai/login" element={<Login />} />
-      <Route path="/frontend_ai/dashboard" element={<Dashboard />} />
-      <Route path="/frontend_ai/signup" element={<Signup />} />
-      <Route path="/frontend_ai/forgot-password" element={<PasswordResetRequest />} />
-      <Route path="/frontend_ai/verify-otp" element={<VerifyOTP />} />
-      <Route path="/frontend_ai/profile" element={<Profile />} />
-      <Route path="/frontend_ai/orders" element={<Orders />} />
-      <Route path="/frontend_ai/payments" element={<Payments />} />
-      <Route path="/frontend_ai/cart" element={<Cart />} />
-      <Route path="/frontend_ai/checkout" element={<Checkout />} />
-      <Route path="/frontend_ai/payment-success" element={<PaymentSuccess />} />
-      <Route path="/frontend_ai/payment-callback" element={<PaymentCallback />} />
-      <Route path="/frontend_ai/adamin/login" element={<AdaminLogin />} />
-      <Route path="/frontend_ai/adamin/dashboard" element={<AdaminDashboard />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/AddCategoryForm" element={<AddCategoryForm />} />
+      <Route path="/AddProductForm" element={<AddProductForm />} />
+      <Route path="/CreateOrderForm" element={<CreateOrderForm />} />
+      <Route path="/admin/orders/:orderId" element={<AdminOrderDetails />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/forgot-password" element={<PasswordResetRequest />} />
+      <Route path="/verify-otp" element={<VerifyOTP />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/orders" element={<Orders />} />
+      <Route path="/payments" element={<Payments />} />
+      <Route path="/cart" element={<Cart />} />
+      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/payment-success" element={<PaymentSuccess />} />
+      <Route path="/payment-callback" element={<PaymentCallback />} />
+      <Route path="/adamin/login" element={<AdaminLogin />} />
+      <Route path="/adamin/dashboard" element={<AdaminDashboard />} />
     </Routes>
   );
 }

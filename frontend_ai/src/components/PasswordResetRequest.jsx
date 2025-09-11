@@ -37,7 +37,7 @@ const PasswordResetRequest = () => {
       await axios.post(`${BASE_URL}/api/accounts/forgot-password/`, { email });
       setMessage('If an account with this email exists, an OTP has been sent.');
       setTimeout(() => {
-        navigate('/frontend_ai/verify-otp', { state: { email, purpose: 'password_reset' } });
+        navigate('/verify-otp', { state: { email, purpose: 'password_reset' } });
       }, 2000); // Delay navigation to show success message
     } catch (err) {
       if (err.response?.status === 400) {
@@ -129,7 +129,7 @@ const PasswordResetRequest = () => {
         </form>
         <div className="mt-6 text-center">
           <button
-            onClick={() => navigate('/frontend_ai/login')}
+            onClick={() => navigate('/login')}
             className="text-emerald-600 hover:text-emerald-500 font-medium text-sm inline-flex items-center"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

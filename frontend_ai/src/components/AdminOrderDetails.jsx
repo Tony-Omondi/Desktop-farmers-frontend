@@ -17,7 +17,7 @@ const AdminOrderDetails = () => {
                 setIsLoading(true);
                 const accessToken = localStorage.getItem('access_token');
                 if (!accessToken) {
-                    navigate('/frontend_ai/adamin/login');
+                    navigate('/adamin/login');
                     return;
                 }
                 const response = await axios.get(`${BASE_URL}/api/adamin/orders/${orderId}/`, {
@@ -31,7 +31,7 @@ const AdminOrderDetails = () => {
                 if (err.response?.status === 401) {
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('refresh_token');
-                    navigate('/frontend_ai/adamin/login');
+                    navigate('/adamin/login');
                 }
             } finally {
                 setIsLoading(false);
@@ -74,7 +74,7 @@ const AdminOrderDetails = () => {
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Order Items - #{order.order_id}</h1>
                     <button
-                        onClick={() => navigate('/frontend_ai/adamin')}
+                        onClick={() => navigate('/adamin')}
                         className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                     >
                         Back to Dashboard

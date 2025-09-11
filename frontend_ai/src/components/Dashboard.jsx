@@ -27,7 +27,7 @@ const Dashboard = () => {
         const token = localStorage.getItem('access_token');
         if (!token) {
           setError('No authentication token found. Please log in.');
-          navigate('/frontend_ai/login');
+          navigate('/login');
           return;
         }
 
@@ -36,7 +36,7 @@ const Dashboard = () => {
           setError('Invalid token format. Please log in again.');
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
-          navigate('/frontend_ai/login');
+          navigate('/login');
           return;
         }
 
@@ -99,19 +99,19 @@ const Dashboard = () => {
               setError('Session expired. Please log in again.');
               localStorage.removeItem('access_token');
               localStorage.removeItem('refresh_token');
-              navigate('/frontend_ai/login');
+              navigate('/login');
             }
           } else {
             setError('No refresh token available. Please log in again.');
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
-            navigate('/frontend_ai/login');
+            navigate('/login');
           }
         } else if (err.response?.status === 403) {
           setError('Access forbidden. Invalid token or permissions.');
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
-          navigate('/frontend_ai/login');
+          navigate('/login');
         } else if (err.response?.status === 404) {
           setError('Endpoint not found. Please check server configuration.');
         } else {
@@ -131,7 +131,7 @@ const Dashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-    navigate('/frontend_ai/login');
+    navigate('/login');
   };
 
   const formatPrice = (price) => {
@@ -223,14 +223,14 @@ const Dashboard = () => {
             </div>
             <div>
               <p className="font-medium text-gray-800 truncate max-w-[150px]">{user?.full_name || 'User'}</p>
-              <a href="/frontend_ai/profile" className="text-xs text-gray-500 hover:text-emerald-600 transition-colors">View profile</a>
+              <a href="/profile" className="text-xs text-gray-500 hover:text-emerald-600 transition-colors">View profile</a>
             </div>
           </div>
 
           {/* Navigation */}
           <nav className="flex-1 space-y-1">
             <a
-              href="/frontend_ai/profile"
+              href="/profile"
               className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -239,7 +239,7 @@ const Dashboard = () => {
               <span>Profile</span>
             </a>
             <a
-              href="/frontend_ai/orders"
+              href="/orders"
               className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -248,7 +248,7 @@ const Dashboard = () => {
               <span>Orders</span>
             </a>
             <a
-              href="/frontend_ai/payments"
+              href="/payments"
               className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -257,7 +257,7 @@ const Dashboard = () => {
               <span>Payments</span>
             </a>
             <a
-              href="/frontend_ai/cart"
+              href="/cart"
               className="flex items-center gap-3 p-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors relative"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -318,7 +318,7 @@ const Dashboard = () => {
                   <option value="price-high">Price: High to Low</option>
                 </select>
                 <a
-                  href="/frontend_ai/cart"
+                  href="/cart"
                   className="relative p-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -493,7 +493,7 @@ const Dashboard = () => {
       {/* Mobile Cart Icon */}
       <div className="md:hidden fixed top-4 right-4 z-40">
         <a
-          href="/frontend_ai/cart"
+          href="/cart"
           className="relative p-2 bg-white rounded-lg shadow-md flex items-center justify-center transition-transform hover:scale-105"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -101,7 +101,7 @@ const Signup = () => {
         password2: formData.confirmPassword,
         full_name: formData.fullName,
       });
-      navigate('/frontend_ai/verify-otp', { state: { email: formData.email, purpose: 'signup' } });
+      navigate('/verify-otp', { state: { email: formData.email, purpose: 'signup' } });
     } catch (err) {
       if (err.response?.status === 400) {
         const responseErrors = err.response.data;
@@ -334,7 +334,7 @@ const Signup = () => {
         
         <p className="text-center mt-6 text-sm text-gray-600">
           Already have an account?{' '}
-          <Link to="/frontend_ai/login" className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
+          <Link to="/login" className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
             Log in
           </Link>
         </p>
