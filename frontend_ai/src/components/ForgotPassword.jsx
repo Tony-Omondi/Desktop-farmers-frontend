@@ -21,7 +21,7 @@ const ForgotPassword = () => {
 
     try {
       setIsLoading(true)
-      const response = await axios.post('http://https://farmers-marketplace-n2qm.onrender.com/api/auth/password-reset/', {
+      const response = await axios.post('https://farmers-marketplace-ez1j.onrender.com/api/auth/password-reset/', {
         email,
       })
       setMessage(response.data.message || 'Password reset link has been sent to your email.')

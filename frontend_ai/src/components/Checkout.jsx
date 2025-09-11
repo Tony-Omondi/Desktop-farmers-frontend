@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const BASE_URL = 'https://farmers-marketplace-n2qm.onrender.com';
+const BASE_URL = 'https://farmers-marketplace-ez1j.onrender.com';
 
 // Fallback product image
 const FALLBACK_IMAGE = 'https://www.flaticon.com/free-icon/crate_4478164?term=farmer+market&page=1&position=11&origin=tag&related_id=4478164';

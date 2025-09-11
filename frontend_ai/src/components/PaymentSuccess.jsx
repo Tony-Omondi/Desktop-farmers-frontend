@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
-const BASE_URL = 'https://farmers-marketplace-n2qm.onrender.com';
+const BASE_URL = 'https://farmers-marketplace-ez1j.onrender.com';
 
 const PaymentSuccess = () => {
   const [order, setOrder] = useState(null);

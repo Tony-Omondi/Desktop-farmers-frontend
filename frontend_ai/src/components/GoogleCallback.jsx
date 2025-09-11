@@ -9,7 +9,7 @@ const GoogleCallback = () => {
   useEffect(() => {
     const fetchToken = async () => {
       try {
-        const response = await axios.get('https://farmers-marketplace-n2qm.onrender.com/api/auth/google/callback/', {
+        const response = await axios.get('https://farmers-marketplace-ez1j.onrender.com/api/auth/google/callback/', {
           withCredentials: true,
         });
         localStorage.setItem('token', response.data.token);

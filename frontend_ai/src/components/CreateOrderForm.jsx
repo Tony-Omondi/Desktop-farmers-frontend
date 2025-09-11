@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const BASE_URL = 'https://farmers-marketplace-n2qm.onrender.com';
+const BASE_URL = 'https://farmers-marketplace-ez1j.onrender.com';
 
 const CreateOrderForm = () => {
     const [formData, setFormData] = useState({
