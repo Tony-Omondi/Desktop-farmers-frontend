@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { GoogleLogin, googleLogout } from '@react-oauth/google';
+import jwt_decode from 'jwt-decode';
 
-const BASE_URL = 'https://farmers-marketplace-ez1j.onrender.com';
+const BASE_URL = 'http://localhost:8000/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -11,16 +13,16 @@ const Login = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  // ---------------- Email/Password login ----------------
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
       setIsLoading(true);
       setError('');
-      const response = await axios.post(`${BASE_URL}/api/accounts/login/`, {
+      const response = await axios.post(`${BASE_URL}/accounts/login/`, {
         email: email.toLowerCase(),
         password,
       });
-      console.log('Login response:', response.data);
       const accessToken = response.data.tokens?.access;
       const refreshToken = response.data.tokens?.refresh;
       if (!accessToken || !refreshToken) {
@@ -28,8 +30,6 @@ const Login = () => {
       }
       localStorage.setItem('access_token', accessToken);
       localStorage.setItem('refresh_token', refreshToken);
-      console.log('Stored access_token:', accessToken);
-      console.log('Stored refresh_token:', refreshToken);
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err.response?.data);
@@ -39,16 +39,44 @@ const Login = () => {
     }
   };
 
+  // ---------------- Google login ----------------
+  const handleGoogleLoginSuccess = async (credentialResponse) => {
+    try {
+      setIsLoading(true);
+      setError('');
+      const { credential } = credentialResponse;
+      if (!credential) throw new Error('Google credential not received');
+
+      // Send token to Django backend
+      const response = await axios.post(`${BASE_URL}/accounts/google-login/`, {
+        token: credential,
+      });
+      const accessToken = response.data.tokens?.access;
+      const refreshToken = response.data.tokens?.refresh;
+      if (!accessToken || !refreshToken) {
+        throw new Error('Tokens not received from server');
+      }
+      localStorage.setItem('access_token', accessToken);
+      localStorage.setItem('refresh_token', refreshToken);
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Google login error:', err.response?.data);
+      setError(err.response?.data?.detail || 'Google login failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLoginError = () => {
+    setError('Google login failed. Please try again.');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}>
       <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-6">
-          <img 
-            src="/logo.png" 
-            alt="Farmers Market Logo" 
-            className="h-12 w-auto"
-          />
+          <img src="/logo.png" alt="Farmers Market Logo" className="h-12 w-auto" />
         </div>
 
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Log in to Farmers Market</h2>
@@ -63,6 +91,7 @@ const Login = () => {
           </div>
         )}
 
+        {/* Email/Password Form */}
         <form onSubmit={handleLogin}>
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -99,19 +128,24 @@ const Login = () => {
               isLoading ? 'bg-emerald-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'
             }`}
           >
-            {isLoading ? (
-              <div className="flex items-center justify-center">
-                <svg className="animate-spin h-5 w-5 mr-2 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Logging in...
-              </div>
-            ) : (
-              'Log In'
-            )}
+            {isLoading ? 'Logging in...' : 'Log In'}
           </button>
         </form>
+
+        {/* OR Divider */}
+        <div className="my-6 flex items-center">
+          <hr className="flex-grow border-gray-300" />
+          <span className="mx-2 text-gray-400">OR</span>
+          <hr className="flex-grow border-gray-300" />
+        </div>
+
+        {/* Google Login Button */}
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleLoginSuccess}
+            onError={handleGoogleLoginError}
+          />
+        </div>
 
         <div className="mt-4 text-center">
           <Link to="/forgot-password" className="text-sm text-emerald-600 hover:text-emerald-500">

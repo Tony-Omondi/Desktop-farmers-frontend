@@ -63,7 +63,7 @@ const ResetPassword = () => {
 
     try {
       setIsLoading(true);
-      const response = await axios.post('https://farmers-marketplace-ez1j.onrender.com/api/accounts/reset-password/', {
+      const response = await axios.post('http://localhost:8000/api/accounts/reset-password/', {
         email,
         code: otp,
         new_password: newPassword,

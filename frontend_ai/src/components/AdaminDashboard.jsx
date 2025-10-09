@@ -5,7 +5,7 @@ import AddProductForm from './AddProductForm';
 import AddCategoryForm from './AddCategoryForm';
 import CreateOrderForm from './CreateOrderForm';
 
-const BASE_URL = 'https://farmers-marketplace-ez1j.onrender.com';
+const BASE_URL = 'http://localhost:8000';
 
 const AdminDashboard = () => {
     const [activeTab, setActiveTab] = useState('users');

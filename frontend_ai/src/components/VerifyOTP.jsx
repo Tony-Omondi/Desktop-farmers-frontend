@@ -30,7 +30,7 @@ const VerifyOTP = () => {
 
     try {
       setIsLoading(true);
-      const response = await axios.post('https://farmers-marketplace-ez1j.onrender.com/api/accounts/verify-otp/', {
+      const response = await axios.post('http://localhost:8000/api/accounts/verify-otp/', {
         email,
         code: otp,
       });

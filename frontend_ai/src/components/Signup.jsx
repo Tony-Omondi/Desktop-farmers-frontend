@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { GoogleLogin } from '@react-oauth/google';
 
-const BASE_URL = 'https://farmers-marketplace-ez1j.onrender.com';
+const BASE_URL = 'http://localhost:8000';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -20,21 +21,13 @@ const Signup = () => {
 
   // Calculate password strength
   useEffect(() => {
-    if (!formData.password) {
-      setPasswordStrength(0);
-      return;
-    }
+    if (!formData.password) return setPasswordStrength(0);
 
     let strength = 0;
-    // Length check
     if (formData.password.length >= 8) strength += 1;
-    // Contains number
     if (/\d/.test(formData.password)) strength += 1;
-    // Contains special character
     if (/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) strength += 1;
-    // Contains uppercase
     if (/[A-Z]/.test(formData.password)) strength += 1;
-    // Contains lowercase
     if (/[a-z]/.test(formData.password)) strength += 1;
 
     setPasswordStrength(strength);
@@ -42,7 +35,6 @@ const Signup = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    // Clear errors for the field being edited
     setErrors({ ...errors, [e.target.name]: '', non_field_errors: [] });
   };
 
@@ -50,26 +42,18 @@ const Signup = () => {
     const newErrors = {};
     const { fullName, email, password, confirmPassword } = formData;
 
-    // Basic field presence checks
     if (!fullName.trim()) newErrors.fullName = 'Full name is required.';
     if (!email.trim()) newErrors.email = 'Email is required.';
     if (!password) newErrors.password = 'Password is required.';
     if (!confirmPassword) newErrors.confirmPassword = 'Please confirm your password.';
 
-    // Email format validation
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = 'Please enter a valid email address.';
     }
 
-    // Password-specific validations to match Django's validate_password
     if (password) {
-      if (password.length < 8) {
-        newErrors.password = 'Password must be at least 8 characters.';
-      }
-      if (/^\d+$/.test(password)) {
-        newErrors.password = 'Password cannot be entirely numeric.';
-      }
-      // Basic check for common passwords (e.g., "password", "12345678")
+      if (password.length < 8) newErrors.password = 'Password must be at least 8 characters.';
+      if (/^\d+$/.test(password)) newErrors.password = 'Password cannot be entirely numeric.';
       const commonPasswords = ['password', '12345678', 'qwerty', 'admin123'];
       if (commonPasswords.some(common => password.toLowerCase().includes(common))) {
         newErrors.password = 'This password is too common.';
@@ -86,7 +70,6 @@ const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
-
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -106,35 +89,48 @@ const Signup = () => {
       if (err.response?.status === 400) {
         const responseErrors = err.response.data;
         const newErrors = {};
-        if (responseErrors.non_field_errors) {
-          newErrors.non_field_errors = Array.isArray(responseErrors.non_field_errors) 
-            ? responseErrors.non_field_errors 
-            : [responseErrors.non_field_errors];
-        }
-        if (responseErrors.email) {
-          newErrors.email = Array.isArray(responseErrors.email) 
-            ? responseErrors.email[0] 
-            : responseErrors.email;
-        }
-        if (responseErrors.full_name) {
-          newErrors.fullName = Array.isArray(responseErrors.full_name) 
-            ? responseErrors.full_name[0] 
-            : responseErrors.full_name;
-        }
-        if (responseErrors.password) {
-          newErrors.password = Array.isArray(responseErrors.password) 
-            ? responseErrors.password[0] 
-            : responseErrors.password;
-        }
+        if (responseErrors.non_field_errors) newErrors.non_field_errors = Array.isArray(responseErrors.non_field_errors) ? responseErrors.non_field_errors : [responseErrors.non_field_errors];
+        if (responseErrors.email) newErrors.email = Array.isArray(responseErrors.email) ? responseErrors.email[0] : responseErrors.email;
+        if (responseErrors.full_name) newErrors.fullName = Array.isArray(responseErrors.full_name) ? responseErrors.full_name[0] : responseErrors.full_name;
+        if (responseErrors.password) newErrors.password = Array.isArray(responseErrors.password) ? responseErrors.password[0] : responseErrors.password;
         setErrors(newErrors);
       } else {
-        setErrors({ 
-          non_field_errors: [err.response?.data?.detail || 'Signup failed. Please try again.'] 
-        });
+        setErrors({ non_field_errors: [err.response?.data?.detail || 'Signup failed. Please try again.'] });
       }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // ---------------- Google signup ----------------
+  const handleGoogleSignupSuccess = async (credentialResponse) => {
+    try {
+      setIsLoading(true);
+      setErrors({});
+      const { credential } = credentialResponse;
+      if (!credential) throw new Error('Google credential not received');
+
+      const response = await axios.post(`${BASE_URL}/api/accounts/google-login/`, {
+        token: credential,
+      });
+
+      const accessToken = response.data.tokens?.access;
+      const refreshToken = response.data.tokens?.refresh;
+      if (!accessToken || !refreshToken) throw new Error('Tokens not received from server');
+
+      localStorage.setItem('access_token', accessToken);
+      localStorage.setItem('refresh_token', refreshToken);
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Google signup error:', err.response?.data);
+      setErrors({ non_field_errors: [err.response?.data?.detail || 'Google signup failed'] });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignupError = () => {
+    setErrors({ non_field_errors: ['Google signup failed. Please try again.'] });
   };
 
   const getPasswordStrengthColor = () => {
@@ -174,8 +170,10 @@ const Signup = () => {
             </div>
           </div>
         )}
-        
+
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Full Name */}
           <div>
             <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
             <input
@@ -188,14 +186,10 @@ const Signup = () => {
               placeholder="Enter your full name"
               required
             />
-            {errors.fullName && <p className="mt-1.5 text-sm text-red-600 flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              {errors.fullName}
-            </p>}
+            {errors.fullName && <p className="mt-1.5 text-sm text-red-600">{errors.fullName}</p>}
           </div>
-          
+
+          {/* Email */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
             <input
@@ -208,19 +202,15 @@ const Signup = () => {
               placeholder="Enter your email"
               required
             />
-            {errors.email && <p className="mt-1.5 text-sm text-red-600 flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              {errors.email}
-            </p>}
+            {errors.email && <p className="mt-1.5 text-sm text-red-600">{errors.email}</p>}
           </div>
-          
+
+          {/* Password */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
             <div className="relative">
               <input
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 id="password"
                 name="password"
                 value={formData.password}
@@ -230,24 +220,10 @@ const Signup = () => {
                 required
                 minLength="8"
               />
-              <button 
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                  </svg>
-                )}
+              <button type="button" className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700" onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
-            
             {formData.password && (
               <div className="mt-2">
                 <div className="flex items-center justify-between mb-1">
@@ -257,31 +233,19 @@ const Signup = () => {
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div 
-                    className={`h-1.5 rounded-full ${getPasswordStrengthColor()}`} 
-                    style={{ width: `${(passwordStrength / 5) * 100}%` }}
-                  ></div>
+                  <div className={`h-1.5 rounded-full ${getPasswordStrengthColor()}`} style={{ width: `${(passwordStrength / 5) * 100}%` }}></div>
                 </div>
               </div>
             )}
-            
-            <p className="mt-2 text-xs text-gray-500">
-              Use at least 8 characters with a mix of letters, numbers & symbols
-            </p>
-            
-            {errors.password && <p className="mt-1.5 text-sm text-red-600 flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              {errors.password}
-            </p>}
+            {errors.password && <p className="mt-1.5 text-sm text-red-600">{errors.password}</p>}
           </div>
-          
+
+          {/* Confirm Password */}
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password</label>
             <div className="relative">
               <input
-                type={showConfirmPassword ? "text" : "password"}
+                type={showConfirmPassword ? 'text' : 'password'}
                 id="confirmPassword"
                 name="confirmPassword"
                 value={formData.confirmPassword}
@@ -290,48 +254,28 @@ const Signup = () => {
                 placeholder="Confirm your password"
                 required
               />
-              <button 
-                type="button"
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                  </svg>
-                )}
+              <button type="button" className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                {showConfirmPassword ? 'Hide' : 'Show'}
               </button>
             </div>
-            {errors.confirmPassword && <p className="mt-1.5 text-sm text-red-600 flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              {errors.confirmPassword}
-            </p>}
+            {errors.confirmPassword && <p className="mt-1.5 text-sm text-red-600">{errors.confirmPassword}</p>}
           </div>
-          
+
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading}
             className={`w-full py-3.5 px-4 bg-emerald-600 rounded-lg text-white font-medium hover:bg-emerald-700 transition-colors shadow-md flex items-center justify-center ${isLoading ? 'opacity-75 cursor-not-allowed' : ''}`}
           >
-            {isLoading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Creating account...
-              </>
-            ) : 'Sign Up'}
+            {isLoading ? 'Creating account...' : 'Sign Up'}
           </button>
         </form>
-        
+
+        {/* OR Google */}
+        <div className="my-6 flex items-center justify-center">
+          <GoogleLogin onSuccess={handleGoogleSignupSuccess} onError={handleGoogleSignupError} />
+        </div>
+
         <p className="text-center mt-6 text-sm text-gray-600">
           Already have an account?{' '}
           <Link to="/login" className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
