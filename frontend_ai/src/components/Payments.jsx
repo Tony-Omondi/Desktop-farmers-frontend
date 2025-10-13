@@ -6,11 +6,15 @@ const BASE_URL = 'http://localhost:8000';
 
 const Payments = () => {
   const [orders, setOrders] = useState([]);
+  const [products, setProducts] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
+  const [expandedPayment, setExpandedPayment] = useState(null);
+  const [downloadingReceipts, setDownloadingReceipts] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,6 +33,20 @@ const Payments = () => {
         });
         console.log('Orders data:', response.data);
         setOrders(response.data);
+
+        // Fetch product details for all order items
+        if (response.data.length > 0) {
+          const allProductIds = response.data.flatMap(order => 
+            order.order_items?.map(item => 
+              typeof item.product === 'object' ? item.product.id : item.product
+            ).filter(Boolean) || []
+          );
+          
+          if (allProductIds.length > 0) {
+            const uniqueProductIds = [...new Set(allProductIds)];
+            await fetchProductDetails(token, uniqueProductIds);
+          }
+        }
       } catch (err) {
         console.error('Fetch orders error:', err.response?.data);
         setError(err.response?.data?.detail || 'Failed to load payments.');
@@ -44,9 +62,31 @@ const Payments = () => {
     fetchOrders();
   }, [navigate]);
 
+  const fetchProductDetails = async (token, productIds) => {
+    try {
+      const productsResponse = await axios.get(`${BASE_URL}/api/products/`, {
+        headers: { Authorization: `Bearer ${token.trim()}` },
+        params: { ids: productIds.join(',') },
+      });
+      
+      const productMap = productsResponse.data.reduce((map, product) => {
+        map[product.id] = product;
+        return map;
+      }, {});
+      
+      setProducts(productMap);
+    } catch (err) {
+      console.error('Fetch products error:', err.response?.data);
+      // Continue without product details if fetch fails
+    }
+  };
+
   const formatPrice = (price) => {
     const numPrice = parseFloat(price);
-    return isNaN(numPrice) ? '0.00' : numPrice.toFixed(2);
+    return isNaN(numPrice) ? '0.00' : numPrice.toLocaleString('en-KE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
   };
 
   const formatDate = (dateString) => {
@@ -61,15 +101,16 @@ const Payments = () => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      'pending': { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
-      'completed': { color: 'bg-emerald-100 text-emerald-800', label: 'Completed' },
-      'failed': { color: 'bg-red-100 text-red-800', label: 'Failed' },
-      'refunded': { color: 'bg-blue-100 text-blue-800', label: 'Refunded' }
+      'pending': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Pending', icon: '⏳' },
+      'completed': { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', label: 'Completed', icon: '✅' },
+      'failed': { color: 'bg-red-100 text-red-800 border-red-200', label: 'Failed', icon: '❌' },
+      'refunded': { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'Refunded', icon: '🔄' }
     };
     
-    const config = statusConfig[status.toLowerCase()] || { color: 'bg-gray-100 text-gray-800', label: status };
+    const config = statusConfig[status?.toLowerCase()] || { color: 'bg-gray-100 text-gray-800 border-gray-200', label: status, icon: '📋' };
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${config.color} border flex items-center gap-1.5`}>
+        <span className="text-sm">{config.icon}</span>
         {config.label}
       </span>
     );
@@ -77,13 +118,113 @@ const Payments = () => {
 
   const getPaymentMethodIcon = (method) => {
     const methodIcons = {
-      'mpesa': '💰',
+      'mpesa': '📱',
       'card': '💳',
       'paypal': '🔵',
       'bank_transfer': '🏦',
       'cash': '💵'
     };
     return methodIcons[method] || '💳';
+  };
+
+  // Get product details from order item
+  const getProductFromItem = (item) => {
+    if (typeof item.product === 'object') {
+      return item.product;
+    }
+    return products[item.product] || null;
+  };
+
+  // Get product image with fallback
+  const getProductImage = (product) => {
+    if (product?.images?.length > 0) {
+      const imageUrl = product.images[0].image;
+      return imageUrl.startsWith('http') ? imageUrl : `${BASE_URL}${imageUrl}`;
+    }
+    return 'https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+  };
+
+  const togglePaymentExpand = (orderId) => {
+    setExpandedPayment(expandedPayment === orderId ? null : orderId);
+  };
+
+  const downloadReceipt = async (order) => {
+    if (!order) return;
+
+    setDownloadingReceipts(prev => ({ ...prev, [order.id]: true }));
+    
+    try {
+      const receiptContent = generateReceiptContent(order);
+      const blob = new Blob([receiptContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipt-order-${order.order_id}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      setSuccessMessage(`Receipt for order #${order.order_id} downloaded successfully!`);
+      setTimeout(() => setSuccessMessage(''), 5000);
+    } catch (err) {
+      console.error('Download error:', err);
+      setError('Failed to download receipt. Please try again.');
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setDownloadingReceipts(prev => ({ ...prev, [order.id]: false }));
+    }
+  };
+
+  const generateReceiptContent = (order) => {
+    const orderDate = formatDate(order.created_at);
+    const items = order.order_items?.map(item => {
+      const product = getProductFromItem(item);
+      const itemTotal = (product?.price || item.product_price || 0) * item.quantity;
+      
+      return {
+        name: product?.name || item.product_name || 'Product',
+        quantity: item.quantity,
+        price: product?.price || item.product_price || 0,
+        total: itemTotal
+      };
+    }) || [];
+
+    const totalAmount = parseFloat(order.total_amount);
+    const discountAmount = order.coupon ? parseFloat(order.coupon.discount_amount || 0) : 0;
+    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+
+    return `
+FARMFRESH MARKET - PAYMENT RECEIPT
+===================================
+
+Order ID: ${order.order_id}
+Date: ${orderDate}
+Payment Status: ${order.payment_status}
+Payment Method: ${order.payment_mode || 'N/A'}
+Order Status: ${order.status}
+
+ITEMS PURCHASED:
+${items.map(item => `
+  ${item.name}
+  Quantity: ${item.quantity} x KSh ${formatPrice(item.price)}
+  Total: KSh ${formatPrice(item.total)}
+`).join('')}
+
+ORDER SUMMARY:
+${order.coupon ? `
+  Subtotal: KSh ${formatPrice(subtotal)}
+  Coupon Discount (${order.coupon.coupon_code}): -KSh ${formatPrice(discountAmount)}
+` : ''}
+  Total Amount: KSh ${formatPrice(totalAmount)}
+
+Thank you for your purchase!
+We appreciate your business.
+
+===================================
+FarmFresh Organic Marketplace
+Fresh products delivered to your doorstep
+    `.trim();
   };
 
   // Filter and sort orders
@@ -108,58 +249,153 @@ const Payments = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50" style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}>
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mb-4"></div>
-          <p className="text-gray-600">Loading your payments...</p>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-white flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-emerald-700 text-lg font-medium">Loading your payments...</p>
+          <p className="text-emerald-500 text-sm mt-2">Getting everything ready for you</p>
         </div>
       </div>
     );
   }
 
+  const totalAmount = orders.reduce((total, order) => total + parseFloat(order.total_amount), 0);
+  const completedPayments = orders.filter(order => order.payment_status?.toLowerCase() === 'completed').length;
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8" style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}>
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Payment History</h1>
-            <p className="text-gray-600">View all your transaction details and payment status</p>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-white">
+      {/* Header */}
+      <header className="bg-white/95 backdrop-blur-md border-b border-emerald-100 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-500 to-green-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-sm sm:text-lg">🌿</span>
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                  FarmFresh
+                </h1>
+                <p className="text-xs text-emerald-600">Organic Marketplace</p>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="flex items-center space-x-1 sm:space-x-2 px-3 py-2 sm:px-4 sm:py-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-lg sm:rounded-xl transition-colors text-sm sm:text-base"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                <span className="hidden xs:inline">Back to Shop</span>
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors mt-4 lg:mt-0"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-            Back to Dashboard
-          </button>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-8">
+        {/* Page Header */}
+        <div className="text-center mb-6 sm:mb-8 px-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-900 mb-3 sm:mb-4">
+            Payment History
+          </h1>
+          <p className="text-emerald-600 text-base sm:text-lg">
+            View all your transaction details and payment status
+          </p>
         </div>
 
-        {/* Error Message */}
+        {/* Messages */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 flex items-center">
-            <svg className="w-5 h-5 mr-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <p className="text-sm">{error}</p>
-            <button onClick={() => setError('')} className="ml-auto text-red-500 hover:text-red-700">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl sm:rounded-2xl flex items-center animate-fade-in mx-2 sm:mx-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-100 rounded-lg sm:rounded-xl flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-red-700 font-medium text-sm sm:text-base">{error}</p>
+            </div>
+            <button 
+              onClick={() => setError('')}
+              className="p-1 sm:p-2 hover:bg-red-100 rounded-lg sm:rounded-xl transition-colors flex-shrink-0 ml-2"
+            >
+              <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </button>
           </div>
         )}
 
-        {/* Filters and Stats */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+        {successMessage && (
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-emerald-50 border border-emerald-200 rounded-xl sm:rounded-2xl flex items-center animate-fade-in mx-2 sm:mx-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-100 rounded-lg sm:rounded-xl flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-emerald-700 font-medium text-sm sm:text-base">{successMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Summary Statistics */}
+        {orders.length > 0 && (
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+            <div className="bg-white rounded-xl shadow-sm border border-emerald-100 p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-emerald-600 text-xs sm:text-sm font-medium">Total Payments</p>
+                  <p className="text-xl sm:text-2xl font-bold text-emerald-900">{orders.length}</p>
+                </div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-blue-100 rounded-lg sm:rounded-xl flex items-center justify-center">
+                  <span className="text-lg sm:text-xl lg:text-2xl">💰</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm border border-emerald-100 p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-emerald-600 text-xs sm:text-sm font-medium">Total Amount</p>
+                  <p className="text-xl sm:text-2xl font-bold text-emerald-600">
+                    KSh {formatPrice(totalAmount)}
+                  </p>
+                </div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-emerald-100 rounded-lg sm:rounded-xl flex items-center justify-center">
+                  <span className="text-lg sm:text-xl lg:text-2xl">💵</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm border border-emerald-100 p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-emerald-600 text-xs sm:text-sm font-medium">Completed</p>
+                  <p className="text-xl sm:text-2xl font-bold text-emerald-900">
+                    {completedPayments}
+                  </p>
+                </div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-green-100 rounded-lg sm:rounded-xl flex items-center justify-center">
+                  <span className="text-lg sm:text-xl lg:text-2xl">✅</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filters and Controls */}
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-emerald-100 p-4 sm:p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="px-3 sm:px-4 py-2 border border-emerald-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-emerald-900 text-sm sm:text-base"
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
@@ -171,7 +407,7 @@ const Payments = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="px-3 sm:px-4 py-2 border border-emerald-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-emerald-900 text-sm sm:text-base"
               >
                 <option value="date">Sort by Date</option>
                 <option value="amount">Sort by Amount</option>
@@ -179,151 +415,212 @@ const Payments = () => {
               
               <button
                 onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                className="px-3 sm:px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg sm:rounded-xl transition-colors text-sm sm:text-base flex items-center space-x-2"
               >
-                {sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}
+                <span>{sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}</span>
               </button>
             </div>
             
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-emerald-600 font-medium">
               Showing {filteredAndSortedOrders.length} of {orders.length} payments
             </div>
           </div>
         </div>
 
-        {/* Orders List */}
+        {/* Payments List */}
         {filteredAndSortedOrders.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl shadow-sm">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 极速11-18 0 9 9 0 0118 0z"></path>
-              </svg>
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-emerald-100 p-8 sm:p-12 lg:p-16 text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <span className="text-2xl sm:text-3xl lg:text-4xl">💳</span>
             </div>
-            <p className="text-gray-500 text-lg mb-2">No payments found</p>
-            <p className="text-gray-400 text-sm">
+            <h3 className="text-xl sm:text-2xl font-bold text-emerald-900 mb-3 sm:mb-4">
+              {filterStatus !== 'all' ? `No ${filterStatus} payments` : 'No payments yet'}
+            </h3>
+            <p className="text-emerald-600 mb-6 sm:mb-8 max-w-md mx-auto text-sm sm:text-base">
               {filterStatus !== 'all' 
-                ? `No ${filterStatus} payments available` 
-                : 'You haven\'t made any payments yet'}
+                ? `You don't have any ${filterStatus} payments at the moment.` 
+                : 'You haven\'t made any payments yet. Start shopping to see your payment history!'}
             </p>
-            {filterStatus !== 'all' && (
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {filterStatus !== 'all' && (
+                <button
+                  onClick={() => setFilterStatus('all')}
+                  className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors text-sm sm:text-base"
+                >
+                  Show All Payments
+                </button>
+              )}
               <button
-                onClick={() => setFilterStatus('all')}
-                className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+                onClick={() => navigate('/dashboard')}
+                className="px-6 py-3 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-medium transition-colors text-sm sm:text-base"
               >
-                Show All Payments
+                Start Shopping
               </button>
-            )}
+            </div>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 sm:space-y-6">
             {filteredAndSortedOrders.map((order) => (
-              <div key={order.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-6">
-                  {/* Order Header */}
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4 gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                        <span className="text-2xl">{getPaymentMethodIcon(order.payment_mode)}</span>
+              <div key={order.id} className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-emerald-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
+                {/* Payment Header */}
+                <div className="p-4 sm:p-6 border-b border-emerald-100 bg-gradient-to-r from-emerald-50 to-green-50">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-500 rounded-lg sm:rounded-xl flex items-center justify-center text-white shadow-md">
+                        <span className="text-lg sm:text-xl">{getPaymentMethodIcon(order.payment_mode)}</span>
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-800">Order #{order.order_id}</h3>
-                        <p className="text-sm text-gray-600">{formatDate(order.created_at)}</p>
+                        <h3 className="text-lg sm:text-xl font-bold text-emerald-900">Order #{order.order_id}</h3>
+                        <p className="text-emerald-600 text-sm sm:text-base">{formatDate(order.created_at)}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
                       {getStatusBadge(order.payment_status)}
-                      <span className="text-xl font-bold text-emerald-600">KSh {formatPrice(order.total_amount)}</span>
+                      <span className="text-lg sm:text-xl font-bold text-emerald-600">KSh {formatPrice(order.total_amount)}</span>
                     </div>
                   </div>
+                </div>
 
-                  {/* Order Details */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-500">Payment Method:</span>
-                      <p className="font-medium text-gray-800 capitalize">{order.payment_mode || 'N/A'}</p>
+                {/* Payment Details */}
+                <div className="p-4 sm:p-6">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-sm mb-4">
+                    <div className="bg-emerald-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                      <span className="text-emerald-600 text-xs sm:text-sm font-medium">Payment Method</span>
+                      <p className="font-bold text-emerald-900 text-sm sm:text-base capitalize">{order.payment_mode || 'N/A'}</p>
                     </div>
-                    <div>
-                      <span className="text-gray-500">Status:</span>
-                      <p className="font-medium text-gray-800 capitalize">{order.payment_status || 'N/A'}</p>
+                    <div className="bg-emerald-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                      <span className="text-emerald-600 text-xs sm:text-sm font-medium">Status</span>
+                      <div className="font-bold">{getStatusBadge(order.payment_status)}</div>
                     </div>
-                    <div>
-                      <span className="text-gray-500">Coupon:</span>
-                      <p className="font-medium text-gray-800">
+                    <div className="bg-emerald-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                      <span className="text-emerald-600 text-xs sm:text-sm font-medium">Coupon</span>
+                      <p className="font-bold text-emerald-900 text-sm sm:text-base">
                         {order.coupon ? order.coupon.coupon_code : 'None'}
                       </p>
                     </div>
-                    <div>
-                      <span className="text-gray-500">Items:</span>
-                      <p className="font-medium text-gray-800">
+                    <div className="bg-emerald-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                      <span className="text-emerald-600 text-xs sm:text-sm font-medium">Items</span>
+                      <p className="font-bold text-emerald-900 text-sm sm:text-base">
                         {order.order_items?.length || 0} item{order.order_items?.length !== 1 ? 's' : ''}
                       </p>
                     </div>
                   </div>
 
-                  {/* View Details Button */}
-                  <button className="mt-4 text-emerald-600 hover:text-emerald-700 text-sm font-medium flex items-center gap-2">
-                    View Order Details
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                  {/* Expandable Items Section */}
+                  <button
+                    onClick={() => togglePaymentExpand(order.id)}
+                    className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 text-sm font-medium group/expand"
+                  >
+                    {expandedPayment === order.id ? 'Hide' : 'View'} Order Items
+                    <svg className={`w-4 h-4 transition-transform group-hover/expand:scale-110 ${expandedPayment === order.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                   </button>
+
+                  {expandedPayment === order.id && order.order_items && (
+                    <div className="mt-4 space-y-3 animate-fade-in">
+                      {order.order_items.map((item) => {
+                        const product = getProductFromItem(item);
+                        const productImage = getProductImage(product);
+                        const itemTotal = (product?.price || item.product_price || 0) * item.quantity;
+                        
+                        return (
+                          <div key={item.id} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-emerald-50 rounded-lg sm:rounded-xl border border-emerald-100">
+                            <img
+                              src={productImage}
+                              alt={product?.name || 'Product'}
+                              className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0 shadow-sm"
+                              onError={(e) => {
+                                e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+                              }}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-emerald-900 text-sm sm:text-base truncate">
+                                {product?.name || item.product_name || 'Product'}
+                              </h4>
+                              <p className="text-emerald-600 text-xs sm:text-sm">Quantity: {item.quantity}</p>
+                              <p className="text-emerald-700 font-medium text-xs sm:text-sm">
+                                KSh {formatPrice(product?.price || item.product_price || 0)} each
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-emerald-900 font-bold text-sm sm:text-base">KSh {formatPrice(itemTotal)}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="p-4 sm:p-6 bg-emerald-50 border-t border-emerald-100">
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
+                    <button 
+                      onClick={() => navigate(`/orders`)}
+                      className="px-3 sm:px-4 py-2 bg-white border border-emerald-200 text-emerald-700 rounded-lg sm:rounded-xl hover:bg-emerald-100 transition-colors text-xs sm:text-sm font-medium"
+                    >
+                      View Orders
+                    </button>
+                    <button 
+                      onClick={() => downloadReceipt(order)}
+                      disabled={downloadingReceipts[order.id]}
+                      className="px-3 sm:px-4 py-2 bg-emerald-500 text-white rounded-lg sm:rounded-xl hover:bg-emerald-600 transition-colors text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                    >
+                      {downloadingReceipts[order.id] ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Downloading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                          </svg>
+                          <span>Download Receipt</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
+      </main>
 
-        {/* Summary Statistics */}
-        {orders.length > 0 && (
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Payments</p>
-                  <p className="text-2xl font-bold text-gray-800">{orders.length}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                </div>
+      {/* Footer */}
+      <footer className="bg-white border-t border-emerald-100 mt-8 sm:mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-emerald-500 to-green-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-xs sm:text-sm">🌿</span>
               </div>
+              <span className="text-base sm:text-lg font-bold text-emerald-900">FarmFresh</span>
             </div>
-            
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Amount</p>
-                  <p className="text-2xl font-bold text-emerald-600">
-                    KSh {formatPrice(orders.reduce((total, order) => total + parseFloat(order.total_amount), 0))}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 极速 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Completed Payments</p>
-                  <p className="text-2xl font-bold text-gray-800">
-                    {orders.filter(order => order.payment_status?.toLowerCase() === 'completed').length}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                </div>
-              </div>
-            </div>
+            <p className="text-emerald-600 text-xs sm:text-sm">
+              Fresh organic products delivered to your doorstep
+            </p>
           </div>
-        )}
-      </div>
+        </div>
+      </footer>
+
+      <style jsx>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+        
+        /* Extra small breakpoint for very small screens */
+        @media (min-width: 475px) {
+          .xs\\:inline { display: inline !important; }
+          .xs\\:grid-cols-2 { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+      `}</style>
     </div>
   );
 };

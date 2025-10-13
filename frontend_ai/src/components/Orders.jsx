@@ -6,8 +6,10 @@ const BASE_URL = 'http://localhost:8000';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
+  const [products, setProducts] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -30,6 +32,20 @@ const Orders = () => {
         });
         console.log('Orders data:', response.data);
         setOrders(response.data);
+
+        // Fetch product details for all order items
+        if (response.data.length > 0) {
+          const allProductIds = response.data.flatMap(order => 
+            order.order_items?.map(item => 
+              typeof item.product === 'object' ? item.product.id : item.product
+            ).filter(Boolean) || []
+          );
+          
+          if (allProductIds.length > 0) {
+            const uniqueProductIds = [...new Set(allProductIds)];
+            await fetchProductDetails(token, uniqueProductIds);
+          }
+        }
       } catch (err) {
         console.error('Fetch orders error:', err.response?.data);
         setError(err.response?.data?.detail || 'Failed to load orders.');
@@ -45,9 +61,31 @@ const Orders = () => {
     fetchOrders();
   }, [navigate]);
 
+  const fetchProductDetails = async (token, productIds) => {
+    try {
+      const productsResponse = await axios.get(`${BASE_URL}/api/products/`, {
+        headers: { Authorization: `Bearer ${token.trim()}` },
+        params: { ids: productIds.join(',') },
+      });
+      
+      const productMap = productsResponse.data.reduce((map, product) => {
+        map[product.id] = product;
+        return map;
+      }, {});
+      
+      setProducts(productMap);
+    } catch (err) {
+      console.error('Fetch products error:', err.response?.data);
+      // Continue without product details if fetch fails
+    }
+  };
+
   const formatPrice = (price) => {
     const numPrice = parseFloat(price);
-    return isNaN(numPrice) ? '0.00' : numPrice.toFixed(2);
+    return isNaN(numPrice) ? '0.00' : numPrice.toLocaleString('en-KE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
   };
 
   const formatDate = (dateString) => {
@@ -62,18 +100,18 @@ const Orders = () => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      'pending': { color: 'bg-yellow-100 text-yellow-800', label: 'Pending', icon: '⏳' },
-      'processing': { color: 'bg-blue-100 text-blue-800', label: 'Processing', icon: '🔄' },
-      'completed': { color: 'bg-emerald-100 text-emerald-800', label: 'Completed', icon: '✅' },
-      'cancelled': { color: 'bg-red-100 text-red-800', label: 'Cancelled', icon: '❌' },
-      'shipped': { color: 'bg-purple-100 text-purple-800', label: 'Shipped', icon: '🚚' },
-      'delivered': { color: 'bg-green-100 text-green-800', label: 'Delivered', icon: '📦' }
+      'pending': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Pending', icon: '⏳' },
+      'processing': { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'Processing', icon: '🔄' },
+      'completed': { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', label: 'Completed', icon: '✅' },
+      'cancelled': { color: 'bg-red-100 text-red-800 border-red-200', label: 'Cancelled', icon: '❌' },
+      'shipped': { color: 'bg-purple-100 text-purple-800 border-purple-200', label: 'Shipped', icon: '🚚' },
+      'delivered': { color: 'bg-green-100 text-green-800 border-green-200', label: 'Delivered', icon: '📦' }
     };
     
-    const config = statusConfig[status.toLowerCase()] || { color: 'bg-gray-100 text-gray-800', label: status, icon: '📋' };
+    const config = statusConfig[status?.toLowerCase()] || { color: 'bg-gray-100 text-gray-800 border-gray-200', label: status, icon: '📋' };
     return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${config.color} flex items-center gap-1`}>
-        <span>{config.icon}</span>
+      <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${config.color} border flex items-center gap-1.5`}>
+        <span className="text-sm">{config.icon}</span>
         {config.label}
       </span>
     );
@@ -81,18 +119,36 @@ const Orders = () => {
 
   const getPaymentStatusBadge = (status) => {
     const statusConfig = {
-      'pending': { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
-      'paid': { color: 'bg-emerald-100 text-emerald-800', label: 'Paid' },
-      'failed': { color: 'bg-red-100 text-red-800', label: 'Failed' },
-      'refunded': { color: 'bg-blue-100 text-blue-800', label: 'Refunded' }
+      'pending': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Pending', icon: '⏳' },
+      'paid': { color: 'bg-emerald-100 text-emerald-800 border-emerald-200', label: 'Paid', icon: '✅' },
+      'failed': { color: 'bg-red-100 text-red-800 border-red-200', label: 'Failed', icon: '❌' },
+      'refunded': { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'Refunded', icon: '🔄' }
     };
     
-    const config = statusConfig[status.toLowerCase()] || { color: 'bg-gray-100 text-gray-800', label: status };
+    const config = statusConfig[status?.toLowerCase()] || { color: 'bg-gray-100 text-gray-800 border-gray-200', label: status, icon: '📋' };
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${config.color} border flex items-center gap-1.5`}>
+        <span className="text-sm">{config.icon}</span>
         {config.label}
       </span>
     );
+  };
+
+  // Get product details from order item
+  const getProductFromItem = (item) => {
+    if (typeof item.product === 'object') {
+      return item.product;
+    }
+    return products[item.product] || null;
+  };
+
+  // Get product image with fallback
+  const getProductImage = (product) => {
+    if (product?.images?.length > 0) {
+      const imageUrl = product.images[0].image;
+      return imageUrl.startsWith('http') ? imageUrl : `${BASE_URL}${imageUrl}`;
+    }
+    return 'https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
   };
 
   // Filter and sort orders
@@ -125,58 +181,164 @@ const Orders = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50" style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}>
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500 mb-4"></div>
-          <p className="text-gray-600">Loading your orders...</p>
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-white flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-emerald-700 text-lg font-medium">Loading your orders...</p>
+          <p className="text-emerald-500 text-sm mt-2">Getting everything ready for you</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8" style={{ fontFamily: '"Plus Jakarta Sans", "Noto Sans", sans-serif' }}>
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Your Orders</h1>
-            <p className="text-gray-600">Track and manage all your orders in one place</p>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-white">
+      {/* Header */}
+      <header className="bg-white/95 backdrop-blur-md border-b border-emerald-100 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-500 to-green-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-sm sm:text-lg">🌿</span>
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                  FarmFresh
+                </h1>
+                <p className="text-xs text-emerald-600">Organic Marketplace</p>
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="flex items-center space-x-1 sm:space-x-2 px-3 py-2 sm:px-4 sm:py-2 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded-lg sm:rounded-xl transition-colors text-sm sm:text-base"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                <span className="hidden xs:inline">Back to Shop</span>
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors mt-4 lg:mt-0"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 极速l7-7m-7 7h18"></path>
-            </svg>
-            Back to Dashboard
-          </button>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-8">
+        {/* Page Header */}
+        <div className="text-center mb-6 sm:mb-8 px-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-900 mb-3 sm:mb-4">
+            Your Orders
+          </h1>
+          <p className="text-emerald-600 text-base sm:text-lg">
+            Track and manage all your orders in one place
+          </p>
         </div>
 
-        {/* Error Message */}
+        {/* Messages */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 flex items-center">
-            <svg className="w-5 h-5 mr-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m极速 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <p className="text-sm">{error}</p>
-            <button onClick={() => setError('')} className="ml-auto text-red-500 hover:text-red-700">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl sm:rounded-2xl flex items-center animate-fade-in mx-2 sm:mx-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-100 rounded-lg sm:rounded-xl flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-red-700 font-medium text-sm sm:text-base">{error}</p>
+            </div>
+            <button 
+              onClick={() => setError('')}
+              className="p-1 sm:p-2 hover:bg-red-100 rounded-lg sm:rounded-xl transition-colors flex-shrink-0 ml-2"
+            >
+              <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </button>
           </div>
         )}
 
-        {/* Filters and Stats */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+        {successMessage && (
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-emerald-50 border border-emerald-200 rounded-xl sm:rounded-2xl flex items-center animate-fade-in mx-2 sm:mx-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-100 rounded-lg sm:rounded-xl flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-emerald-700 font-medium text-sm sm:text-base">{successMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Statistics */}
+        {orders.length > 0 && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
+            <div className="bg-white rounded-xl shadow-sm border border-emerald-100 p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-emerald-600 text-xs sm:text-sm font-medium">Total Orders</p>
+                  <p className="text-xl sm:text-2xl font-bold text-emerald-900">{orders.length}</p>
+                </div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-blue-100 rounded-lg sm:rounded-xl flex items-center justify-center">
+                  <span className="text-lg sm:text-xl lg:text-2xl">📦</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm border border-emerald-100 p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-emerald-600 text-xs sm:text-sm font-medium">Total Spent</p>
+                  <p className="text-xl sm:text-2xl font-bold text-emerald-600">
+                    KSh {formatPrice(orders.reduce((total, order) => total + parseFloat(order.total_amount), 0))}
+                  </p>
+                </div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-emerald-100 rounded-lg sm:rounded-xl flex items-center justify-center">
+                  <span className="text-lg sm:text-xl lg:text-2xl">💰</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm border border-emerald-100 p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-emerald-600 text-xs sm:text-sm font-medium">Completed</p>
+                  <p className="text-xl sm:text-2xl font-bold text-emerald-900">
+                    {orders.filter(order => order.status?.toLowerCase() === 'completed').length}
+                  </p>
+                </div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-green-100 rounded-lg sm:rounded-xl flex items-center justify-center">
+                  <span className="text-lg sm:text-xl lg:text-2xl">✅</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm border border-emerald-100 p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-emerald-600 text-xs sm:text-sm font-medium">Active</p>
+                  <p className="text-xl sm:text-2xl font-bold text-emerald-900">
+                    {orders.filter(order => ['pending', 'processing', 'shipped'].includes(order.status?.toLowerCase())).length}
+                  </p>
+                </div>
+                <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-yellow-100 rounded-lg sm:rounded-xl flex items-center justify-center">
+                  <span className="text-lg sm:text-xl lg:text-2xl">⏳</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filters and Controls */}
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-emerald-100 p-4 sm:p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="px-3 sm:px-4 py-2 border border-emerald-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-emerald-900 text-sm sm:text-base"
               >
                 <option value="all">All Orders</option>
                 <option value="pending">Pending</option>
@@ -190,7 +352,7 @@ const Orders = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2极速 focus:ring-emerald-500 focus:border-emerald-500"
+                className="px-3 sm:px-4 py-2 border border-emerald-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-emerald-900 text-sm sm:text-base"
               >
                 <option value="date">Sort by Date</option>
                 <option value="amount">Sort by Amount</option>
@@ -199,13 +361,13 @@ const Orders = () => {
               
               <button
                 onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                className="px-3 sm:px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg sm:rounded-xl transition-colors text-sm sm:text-base flex items-center space-x-2"
               >
-                {sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}
+                <span>{sortOrder === 'asc' ? '↑ Asc' : '↓ Desc'}</span>
               </button>
             </div>
             
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-emerald-600 font-medium">
               Showing {filteredAndSortedOrders.length} of {orders.length} orders
             </div>
           </div>
@@ -213,68 +375,76 @@ const Orders = () => {
 
         {/* Orders List */}
         {filteredAndSortedOrders.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl shadow-sm">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-              </svg>
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-emerald-100 p-8 sm:p-12 lg:p-16 text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <span className="text-2xl sm:text-3xl lg:text-4xl">📋</span>
             </div>
-            <p className="text-gray-500 text-lg mb-2">No orders found</p>
-            <p className="text-gray-400 text-sm">
+            <h3 className="text-xl sm:text-2xl font-bold text-emerald-900 mb-3 sm:mb-4">
+              {filterStatus !== 'all' ? `No ${filterStatus} orders` : 'No orders yet'}
+            </h3>
+            <p className="text-emerald-600 mb-6 sm:mb-8 max-w-md mx-auto text-sm sm:text-base">
               {filterStatus !== 'all' 
-                ? `No ${filterStatus} orders available` 
-                : 'You haven\'t placed any orders yet'}
+                ? `You don't have any ${filterStatus} orders at the moment.` 
+                : 'You haven\'t placed any orders yet. Start shopping to see your orders here!'}
             </p>
-            {filterStatus !== 'all' && (
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {filterStatus !== 'all' && (
+                <button
+                  onClick={() => setFilterStatus('all')}
+                  className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors text-sm sm:text-base"
+                >
+                  Show All Orders
+                </button>
+              )}
               <button
-                onClick={() => setFilterStatus('all')}
-                className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+                onClick={() => navigate('/dashboard')}
+                className="px-6 py-3 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-medium transition-colors text-sm sm:text-base"
               >
-                Show All Orders
+                Start Shopping
               </button>
-            )}
+            </div>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 sm:space-y-6">
             {filteredAndSortedOrders.map((order) => (
-              <div key={order.id} className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+              <div key={order.id} className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-emerald-100 overflow-hidden hover:shadow-lg transition-all duration-300 group">
                 {/* Order Header */}
-                <div className="p-6 border-b border-gray-200">
+                <div className="p-4 sm:p-6 border-b border-emerald-100 bg-gradient-to-r from-emerald-50 to-green-50">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                        <span className="text-2xl">📦</span>
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-500 rounded-lg sm:rounded-xl flex items-center justify-center text-white shadow-md">
+                        <span className="text-lg sm:text-xl">📦</span>
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-800">Order #{order.order_id}</h3>
-                        <p className="text-sm text-gray-600">{formatDate(order.created_at)}</p>
+                        <h3 className="text-lg sm:text-xl font-bold text-emerald-900">Order #{order.order_id}</h3>
+                        <p className="text-emerald-600 text-sm sm:text-base">{formatDate(order.created_at)}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
                       {getStatusBadge(order.status)}
-                      <span className="text-xl font-bold text-emerald-600">KSh {formatPrice(order.total_amount)}</span>
+                      <span className="text-lg sm:text-xl font-bold text-emerald-600">KSh {formatPrice(order.total_amount)}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Order Summary */}
-                <div className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-sm mb-4">
-                    <div>
-                      <span className="text-gray-500">Items</span>
-                      <p className="font-medium text-gray-800">{order.order_items.length} item{order.order_items.length !== 1 ? 's' : ''}</p>
+                <div className="p-4 sm:p-6">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-sm mb-4">
+                    <div className="bg-emerald-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                      <span className="text-emerald-600 text-xs sm:text-sm font-medium">Items</span>
+                      <p className="font-bold text-emerald-900 text-sm sm:text-base">{order.order_items?.length || 0} item{order.order_items?.length !== 1 ? 's' : ''}</p>
                     </div>
-                    <div>
-                      <span className="text-gray-500">Payment Status</span>
-                      <div className="font-medium">{getPaymentStatusBadge(order.payment_status)}</div>
+                    <div className="bg-emerald-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                      <span className="text-emerald-600 text-xs sm:text-sm font-medium">Payment Status</span>
+                      <div className="font-bold">{getPaymentStatusBadge(order.payment_status)}</div>
                     </div>
-                    <div>
-                      <span className="text-gray-500">Payment Method</span>
-                      <p className="font-medium text-gray-800 capitalize">{order.payment_mode || 'N/A'}</p>
+                    <div className="bg-emerald-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                      <span className="text-emerald-600 text-xs sm:text-sm font-medium">Payment Method</span>
+                      <p className="font-bold text-emerald-900 text-sm sm:text-base capitalize">{order.payment_mode || 'N/A'}</p>
                     </div>
-                    <div>
-                      <span className="text-gray-500">Coupon</span>
-                      <p className="font-medium text-gray-800">
+                    <div className="bg-emerald-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                      <span className="text-emerald-600 text-xs sm:text-sm font-medium">Coupon</span>
+                      <p className="font-bold text-emerald-900 text-sm sm:text-base">
                         {order.coupon ? order.coupon.coupon_code : 'None'}
                       </p>
                     </div>
@@ -283,124 +453,87 @@ const Orders = () => {
                   {/* Expandable Items Section */}
                   <button
                     onClick={() => toggleOrderExpand(order.id)}
-                    className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+                    className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 text-sm font-medium group/expand"
                   >
                     {expandedOrder === order.id ? 'Hide' : 'View'} Order Items
-                    <svg className={`w-4 h-4 transition-transform ${expandedOrder === order.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-4 h-4 transition-transform group-hover/expand:scale-110 ${expandedOrder === order.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                   </button>
 
-                  {expandedOrder === order.id && (
-                    <div className="mt-4 space-y-3">
-                      {order.order_items.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center gap-3 flex-1">
+                  {expandedOrder === order.id && order.order_items && (
+                    <div className="mt-4 space-y-3 animate-fade-in">
+                      {order.order_items.map((item) => {
+                        const product = getProductFromItem(item);
+                        const productImage = getProductImage(product);
+                        const itemTotal = (product?.price || item.product_price || 0) * item.quantity;
+                        
+                        return (
+                          <div key={item.id} className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-emerald-50 rounded-lg sm:rounded-xl border border-emerald-100">
                             <img
-                              src={
-                                item.product.images && item.product.images.length > 0
-                                  ? item.product.images[0].image
-                                  : 'https://images.pexels.com/photos/5705490/pexels-photo-5705490.jpeg?auto=compress&cs=tinysrgb&w=600'
-                              }
-                              alt={item.product.name}
-                              className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
+                              src={productImage}
+                              alt={product?.name || 'Product'}
+                              className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0 shadow-sm"
                               onError={(e) => {
-                                e.target.src = 'https://images.pexels.com/photos/5705490/pexels-photo-5705490.jpeg?auto=compress&cs=tinysrgb&w=600';
+                                e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
                               }}
                             />
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-gray-800 truncate">{item.product.name}</h4>
-                              <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                              <h4 className="font-bold text-emerald-900 text-sm sm:text-base truncate">
+                                {product?.name || item.product_name || 'Product'}
+                              </h4>
+                              <p className="text-emerald-600 text-xs sm:text-sm">Quantity: {item.quantity}</p>
+                              <p className="text-emerald-700 font-medium text-xs sm:text-sm">
+                                KSh {formatPrice(product?.price || item.product_price || 0)} each
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-emerald-900 font-bold text-sm sm:text-base">KSh {formatPrice(itemTotal)}</p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-emerald-600 font-medium">KSh {formatPrice(item.product_price)} each</p>
-                            <p className="text-gray-800 font-semibold">KSh {formatPrice(item.product_price * item.quantity)}</p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="p-6 bg-gray-50 border-t border-gray-200">
-                  <div className="flex flex-wrap gap-3">
-                    <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
-                      Track Order
-                    </button>
-                    <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
-                      Contact Support
-                    </button>
-                    <button className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm">
-                      View Invoice
-                    </button>
-                  </div>
                 </div>
               </div>
             ))}
           </div>
         )}
+      </main>
 
-        {/* Statistics */}
-        {orders.length > 0 && (
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Orders</p>
-                  <p className="text-2xl font-bold text-gray-800">{orders.length}</p>
-                </div>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">📦</span>
-                </div>
+      {/* Footer */}
+      <footer className="bg-white border-t border-emerald-100 mt-8 sm:mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-emerald-500 to-green-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-xs sm:text-sm">🌿</span>
               </div>
+              <span className="text-base sm:text-lg font-bold text-emerald-900">FarmFresh</span>
             </div>
-            
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Spent</p>
-                  <p className="text-2xl font-bold text-emerald-600">
-                    KSh {formatPrice(orders.reduce((total, order) => total + parseFloat(order.total_amount), 0))}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">💰</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Completed Orders</p>
-                  <p className="text-2xl font-bold text-gray-800">
-                    {orders.filter(order => order.status?.toLowerCase() === 'completed').length}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">✅</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Active Orders</p>
-                  <p className="text-2xl font-bold text-gray-800">
-                    {orders.filter(order => ['pending', 'processing', 'shipped'].includes(order.status?.toLowerCase())).length}
-                  </p>
-                </div>
-                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl">⏳</span>
-                </div>
-              </div>
-            </div>
+            <p className="text-emerald-600 text-xs sm:text-sm">
+              Fresh organic products delivered to your doorstep
+            </p>
           </div>
-        )}
-      </div>
+        </div>
+      </footer>
+
+      <style jsx>{`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+        
+        /* Extra small breakpoint for very small screens */
+        @media (min-width: 475px) {
+          .xs\\:inline { display: inline !important; }
+          .xs\\:grid-cols-2 { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+      `}</style>
     </div>
   );
 };
