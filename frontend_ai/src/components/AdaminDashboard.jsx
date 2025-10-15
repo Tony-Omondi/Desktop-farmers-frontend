@@ -22,6 +22,14 @@ const AdminDashboard = () => {
         totalOrders: 0,
         totalRevenue: 0
     });
+    
+    // ✅ EDIT MODAL STATES
+    const [editingProduct, setEditingProduct] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [updatingProduct, setUpdatingProduct] = useState(false);
+    const [editSuccess, setEditSuccess] = useState('');
+    const [categories, setCategories] = useState([]);
+    
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -33,21 +41,30 @@ const AdminDashboard = () => {
                     navigate('/adamin/login');
                     return;
                 }
-                const response = await axios.get(`${BASE_URL}/api/adamin/dashboard/`, {
-                    headers: { Authorization: `Bearer ${accessToken}` }
-                });
-                console.log('Dashboard data:', response.data);
-                setData(response.data);
+                
+                // Fetch dashboard + categories
+                const [dashboardResponse, categoriesResponse] = await Promise.all([
+                    axios.get(`${BASE_URL}/api/adamin/dashboard/`, {
+                        headers: { Authorization: `Bearer ${accessToken}` }
+                    }),
+                    axios.get(`${BASE_URL}/api/categories/`, {
+                        headers: { Authorization: `Bearer ${accessToken}` }
+                    })
+                ]);
+                
+                console.log('Dashboard data:', dashboardResponse.data);
+                setData(dashboardResponse.data);
+                setCategories(categoriesResponse.data);
                 
                 // Calculate statistics
-                const totalRevenue = response.data.orders.reduce((sum, order) => {
+                const totalRevenue = dashboardResponse.data.orders.reduce((sum, order) => {
                     return sum + (parseFloat(order.total_amount) || 0);
                 }, 0);
                 
                 setStats({
-                    totalUsers: response.data.users.length,
-                    totalProducts: response.data.products.length,
-                    totalOrders: response.data.orders.length,
+                    totalUsers: dashboardResponse.data.users.length,
+                    totalProducts: dashboardResponse.data.products.length,
+                    totalOrders: dashboardResponse.data.orders.length,
                     totalRevenue: totalRevenue
                 });
             } catch (err) {
@@ -64,6 +81,68 @@ const AdminDashboard = () => {
         };
         fetchData();
     }, [navigate]);
+
+    // ✅ PERFECT: HANDLE PRODUCT EDIT
+    const handleEditProduct = (product) => {
+        console.log('✏️ ADMIN CLICKED!', product.name);
+        setEditingProduct({ ...product });
+        setShowEditModal(true);
+    };
+
+    // ✅ MODEL-PERFECT: UPDATE PRODUCT (4 FIELDS ONLY!)
+    const updateProduct = async (e) => {
+        e.preventDefault();
+        if (!editingProduct) return;
+        
+        setUpdatingProduct(true);
+        try {
+            const accessToken = localStorage.getItem('access_token');
+            
+            // ✅ EXACT MODEL FIELDS: name, description, price, stock
+            const updateData = {
+                name: editingProduct.name,
+                description: editingProduct.description,
+                price: parseFloat(editingProduct.price),
+                stock: parseInt(editingProduct.stock)
+            };
+            
+            console.log('📤 SENDING (MODEL MATCH):', updateData);
+            
+            const response = await axios.patch(
+                `${BASE_URL}/api/products/${editingProduct.id}/`,
+                updateData,
+                { 
+                    headers: { 
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            
+            console.log('✅ UPDATED:', response.data);
+            
+            // Update local state
+            setData(prev => ({
+                ...prev,
+                products: prev.products.map(p => 
+                    p.id === editingProduct.id ? { ...response.data, images: p.images } : p
+                )
+            }));
+            
+            setEditSuccess('Product updated successfully! ✅');
+            setTimeout(() => {
+                setEditSuccess('');
+                setShowEditModal(false);
+                setEditingProduct(null);
+            }, 2000);
+            
+        } catch (err) {
+            console.error('❌ Update error:', err.response?.data);
+            setError(err.response?.data?.detail || 'Failed to update product');
+        } finally {
+            setUpdatingProduct(false);
+        }
+    };
 
     // Filter data based on date range
     const filterDataByDate = (items, dateField = 'created_at') => {
@@ -251,7 +330,7 @@ const AdminDashboard = () => {
                                 </div>
                                 <div>
                                     <p className="text-gray-500 text-sm">Total Revenue</p>
-                                    <p className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</p>
+                                    <p className="text-2xl font-bold">KSh {stats.totalRevenue.toFixed(2)}</p>
                                 </div>
                             </div>
                         </div>
@@ -343,7 +422,7 @@ const AdminDashboard = () => {
                                                 <div key={order.order_id} className="p-3 border-b last:border-b-0 hover:bg-gray-50">
                                                     <div className="flex justify-between">
                                                         <span className="font-medium">#{order.order_id}</span>
-                                                        <span className="text-emerald-600">${order.total_amount}</span>
+                                                        <span className="text-emerald-600">KSh {order.total_amount}</span>
                                                     </div>
                                                     <div className="text-sm text-gray-500">
                                                         {order.user.email} • {new Date(order.created_at).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}
@@ -422,6 +501,7 @@ const AdminDashboard = () => {
                             </div>
                         )}
                         
+                        {/* ✅ MODEL-PERFECT PRODUCTS SECTION */}
                         {activeTab === 'products' && (
                             <div>
                                 <div className="flex justify-between items-center mb-4">
@@ -430,9 +510,20 @@ const AdminDashboard = () => {
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {getFilteredData('products').map(product => (
-                                        <div key={product.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                                            <div className="h-48 bg-gray-200 rounded-lg overflow-hidden mb-3">
-                                                {product.images.length > 0 ? (
+                                        <div key={product.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow relative">
+                                            {/* ✅ EDIT BUTTON */}
+                                            <button
+                                                onClick={() => handleEditProduct(product)}
+                                                className="absolute top-3 right-3 p-2 bg-white rounded-full hover:bg-gray-50 z-20 shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-200"
+                                                title="Edit Product"
+                                            >
+                                                <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                </svg>
+                                            </button>
+                                            
+                                            <div className="h-48 bg-gray-200 rounded-lg overflow-hidden mb-3 relative">
+                                                {product.images && product.images.length > 0 ? (
                                                     <img
                                                         src={product.images[0].image}
                                                         alt={product.name}
@@ -447,7 +538,7 @@ const AdminDashboard = () => {
                                             <h3 className="text-lg font-medium">{product.name}</h3>
                                             <p className="text-gray-600 text-sm mt-1 line-clamp-2">{product.description}</p>
                                             <div className="flex justify-between items-center mt-3">
-                                                <p className="text-emerald-600 font-semibold">${product.price}</p>
+                                                <p className="text-emerald-600 font-semibold">KSh {parseFloat(product.price).toFixed(2)}</p>
                                                 <p className="text-sm text-gray-500">Stock: {product.stock}</p>
                                             </div>
                                             <div className="mt-2 text-sm text-gray-500">
@@ -462,6 +553,7 @@ const AdminDashboard = () => {
                             </div>
                         )}
                         
+                        {/* Orders & Payments tabs unchanged */}
                         {activeTab === 'orders' && (
                             <div>
                                 <div className="flex justify-between items-center mb-4">
@@ -486,7 +578,7 @@ const AdminDashboard = () => {
                                                 <tr key={order.order_id} className="border-t hover:bg-gray-50">
                                                     <td className="p-3 font-medium">#{order.order_id}</td>
                                                     <td className="p-3">{order.user.email}</td>
-                                                    <td className="p-3">${order.total_amount}</td>
+                                                    <td className="p-3">KSh {order.total_amount}</td>
                                                     <td className="p-3">
                                                         <span className={`px-2 py-1 rounded-full text-xs ${
                                                             order.status === 'completed' ? 'bg-green-100 text-green-800' :
@@ -546,7 +638,7 @@ const AdminDashboard = () => {
                                                 <tr key={order.payment.reference} className="border-t hover:bg-gray-50">
                                                     <td className="p-3">{order.payment.reference || 'N/A'}</td>
                                                     <td className="p-3">#{order.order_id}</td>
-                                                    <td className="p-3">${order.payment.amount}</td>
+                                                    <td className="p-3">KSh {order.payment.amount}</td>
                                                     <td className="p-3">
                                                         <span className={`px-2 py-1 rounded-full text-xs ${
                                                             order.payment.payment_status === 'completed' ? 'bg-green-100 text-green-800' :
@@ -577,6 +669,135 @@ const AdminDashboard = () => {
                         {activeTab === 'create-order' && <CreateOrderForm />}
                     </div>
                 )}
+
+                {/* ✅ MODEL-PERFECT: EDIT MODAL (4 FIELDS ONLY!) */}
+                {showEditModal && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                            {/* Header */}
+                            <div className="p-6 border-b border-gray-200">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-2xl font-bold text-gray-800">Edit Product</h2>
+                                    <button
+                                        onClick={() => {
+                                            setShowEditModal(false);
+                                            setEditingProduct(null);
+                                        }}
+                                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                    >
+                                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                {editSuccess && (
+                                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+                                        {editSuccess}
+                                    </div>
+                                )}
+                                {error && (
+                                    <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                                        {error}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* ✅ 4 FIELDS ONLY: MODEL PERFECT */}
+                            <form onSubmit={updateProduct} className="p-6 space-y-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
+                                    <input
+                                        type="text"
+                                        value={editingProduct?.name || ''}
+                                        onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                    <textarea
+                                        rows="3"
+                                        value={editingProduct?.description || ''}
+                                        onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Price (KSh)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={editingProduct?.price || ''}
+                                            onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })}
+                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Stock</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={editingProduct?.stock || ''}
+                                            onChange={(e) => setEditingProduct({ ...editingProduct, stock: e.target.value })}
+                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* ✅ MODEL INFO: Read-only */}
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="p-3 bg-gray-50 rounded-lg">
+                                        <p className="text-sm text-gray-500">📂 Category</p>
+                                        <p className="font-medium">{editingProduct?.category?.name || 'None'}</p>
+                                    </div>
+                                    <div className="p-3 bg-gray-50 rounded-lg">
+                                        <p className="text-sm text-gray-500">🖼️ Images</p>
+                                        <p className="font-medium">{editingProduct?.images?.length || 0} current</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 pt-4">
+                                    <button
+                                        type="submit"
+                                        disabled={updatingProduct}
+                                        className="flex-1 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+                                    >
+                                        {updatingProduct ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                <span>Updating...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                <span>Save Changes</span>
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowEditModal(false);
+                                            setEditingProduct(null);
+                                        }}
+                                        className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
             </div>
         </div>
     );
