@@ -11,6 +11,7 @@ const Profile = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [formData, setFormData] = useState({
     full_name: '',
+    phone_number: '',
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -35,6 +36,7 @@ const Profile = () => {
         setProfile(profileResponse.data);
         setFormData({
           full_name: profileResponse.data.full_name || '',
+          phone_number: profileResponse.data.phone_number || '',
         });
 
         // Fetch orders for stats
@@ -67,22 +69,43 @@ const Profile = () => {
     setError('');
     setSuccessMessage('');
 
+    // Validation
     if (!formData.full_name.trim()) {
       setError('Full name is required');
+      return;
+    }
+    if (formData.phone_number && !/^\+?\d{10,15}$/.test(formData.phone_number.replace(/\s/g, ''))) {
+      setError('Please enter a valid phone number (10-15 digits)');
       return;
     }
 
     setIsUpdating(true);
     try {
       const token = localStorage.getItem('access_token');
+      const updateData = {
+        full_name: formData.full_name.trim(),
+      };
+      
+      // Only include phone_number if it's not empty
+      if (formData.phone_number.trim()) {
+        updateData.phone_number = formData.phone_number.trim();
+      }
+
       const response = await axios.patch(
         `${BASE_URL}/api/accounts/me/`,
-        { full_name: formData.full_name.trim() },
+        updateData,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      setProfile({ ...profile, full_name: response.data.full_name });
+      
+      // Update local state with response
+      setProfile(prev => ({
+        ...prev,
+        full_name: response.data.full_name,
+        phone_number: response.data.phone_number
+      }));
+      
       setSuccessMessage('Profile updated successfully!');
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
@@ -229,14 +252,19 @@ const Profile = () => {
                       {profile?.full_name || 'User'}
                     </h3>
                     <p className="text-emerald-600 text-sm sm:text-base">{profile?.email}</p>
-                    <p className="text-emerald-500 text-xs sm:text-sm mt-1">Member since {new Date().getFullYear()}</p>
+                    {profile?.phone_number && (
+                      <p className="text-emerald-500 text-xs sm:text-sm mt-1">
+                        📱 {profile.phone_number}
+                      </p>
+                    )}
+                    <p className="text-emerald-500 text-xs sm:text-sm mt-1">Member since {new Date(profile?.date_joined || Date.now()).getFullYear()}</p>
                   </div>
                 </div>
 
                 <form onSubmit={handleSubmit}>
                   <div className="space-y-4 sm:space-y-6">
                     <div>
-                      <label className="block text-sm font-medium text-emerald-700 mb-2">Full Name</label>
+                      <label className="block text-sm font-medium text-emerald-700 mb-2">Full Name *</label>
                       <input
                         type="text"
                         name="full_name"
@@ -244,7 +272,21 @@ const Profile = () => {
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all"
                         placeholder="Enter your full name"
+                        required
                       />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-emerald-700 mb-2">Phone Number</label>
+                      <input
+                        type="tel"
+                        name="phone_number"
+                        value={formData.phone_number}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-emerald-900 placeholder-emerald-400 transition-all"
+                        placeholder="e.g. +254 700 123 456"
+                      />
+                      <p className="mt-1 text-xs text-emerald-500">Optional - Used for order updates and delivery</p>
                     </div>
                     
                     <div>
@@ -389,7 +431,6 @@ const Profile = () => {
           animation: fade-in 0.3s ease-out;
         }
         
-        /* Extra small breakpoint for very small screens */
         @media (min-width: 475px) {
           .xs\\:inline { display: inline !important; }
         }
