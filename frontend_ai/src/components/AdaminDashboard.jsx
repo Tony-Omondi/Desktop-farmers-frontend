@@ -4,12 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import AddProductForm from './AddProductForm';
 import AddCategoryForm from './AddCategoryForm';
 import CreateOrderForm from './CreateOrderForm';
+import AddRecipeForm from './AddRecipeForm';
+import AddRecipeCategory from './AddRecipeCategory';  
+import RecipeCategories from './RecipeCategories';    
 
 const BASE_URL = 'http://localhost:8000';
 
 const AdminDashboard = () => {
-    const [activeTab, setActiveTab] = useState('users');
-    const [data, setData] = useState({ users: [], products: [], orders: [] });
+    const [activeTab, setActiveTab] = useState('overview');
+    const [data, setData] = useState({ users: [], products: [], orders: [], recipes: [] });
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [filterDateRange, setFilterDateRange] = useState('all');
@@ -20,15 +23,18 @@ const AdminDashboard = () => {
         totalUsers: 0,
         totalProducts: 0,
         totalOrders: 0,
-        totalRevenue: 0
+        totalRevenue: 0,
+        totalRecipes: 0
     });
     
-    // ✅ EDIT MODAL STATES
     const [editingProduct, setEditingProduct] = useState(null);
+    const [editingRecipe, setEditingRecipe] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
     const [updatingProduct, setUpdatingProduct] = useState(false);
+    const [updatingRecipe, setUpdatingRecipe] = useState(false);
     const [editSuccess, setEditSuccess] = useState('');
     const [categories, setCategories] = useState([]);
+    const [recipeCategories, setRecipeCategories] = useState([]);
     
     const navigate = useNavigate();
 
@@ -42,21 +48,26 @@ const AdminDashboard = () => {
                     return;
                 }
                 
-                // Fetch dashboard + categories
-                const [dashboardResponse, categoriesResponse] = await Promise.all([
+                const [dashboardResponse, categoriesResponse, recipeCategoriesResponse] = await Promise.all([
                     axios.get(`${BASE_URL}/api/adamin/dashboard/`, {
                         headers: { Authorization: `Bearer ${accessToken}` }
                     }),
                     axios.get(`${BASE_URL}/api/categories/`, {
                         headers: { Authorization: `Bearer ${accessToken}` }
+                    }),
+                    axios.get(`${BASE_URL}/api/recipe-categories/`, {
+                        headers: { Authorization: `Bearer ${accessToken}` }
                     })
                 ]);
                 
                 console.log('Dashboard data:', dashboardResponse.data);
-                setData(dashboardResponse.data);
+                setData({
+                    ...dashboardResponse.data,
+                    recipes: dashboardResponse.data.recipes || []
+                });
                 setCategories(categoriesResponse.data);
+                setRecipeCategories(recipeCategoriesResponse.data);
                 
-                // Calculate statistics
                 const totalRevenue = dashboardResponse.data.orders.reduce((sum, order) => {
                     return sum + (parseFloat(order.total_amount) || 0);
                 }, 0);
@@ -65,7 +76,8 @@ const AdminDashboard = () => {
                     totalUsers: dashboardResponse.data.users.length,
                     totalProducts: dashboardResponse.data.products.length,
                     totalOrders: dashboardResponse.data.orders.length,
-                    totalRevenue: totalRevenue
+                    totalRevenue: totalRevenue,
+                    totalRecipes: dashboardResponse.data.recipes?.length || 0
                 });
             } catch (err) {
                 console.error('Dashboard error:', err.response?.data);
@@ -82,14 +94,20 @@ const AdminDashboard = () => {
         fetchData();
     }, [navigate]);
 
-    // ✅ PERFECT: HANDLE PRODUCT EDIT
     const handleEditProduct = (product) => {
         console.log('✏️ ADMIN CLICKED!', product.name);
         setEditingProduct({ ...product });
+        setEditingRecipe(null);
         setShowEditModal(true);
     };
 
-    // ✅ MODEL-PERFECT: UPDATE PRODUCT (4 FIELDS ONLY!)
+    const handleEditRecipe = (recipe) => {
+        console.log('✏️ ADMIN CLICKED RECIPE!', recipe.title);
+        setEditingRecipe({ ...recipe });
+        setEditingProduct(null);
+        setShowEditModal(true);
+    };
+
     const updateProduct = async (e) => {
         e.preventDefault();
         if (!editingProduct) return;
@@ -98,7 +116,6 @@ const AdminDashboard = () => {
         try {
             const accessToken = localStorage.getItem('access_token');
             
-            // ✅ EXACT MODEL FIELDS: name, description, price, stock
             const updateData = {
                 name: editingProduct.name,
                 description: editingProduct.description,
@@ -106,7 +123,7 @@ const AdminDashboard = () => {
                 stock: parseInt(editingProduct.stock)
             };
             
-            console.log('📤 SENDING (MODEL MATCH):', updateData);
+            console.log('📤 SENDING (PRODUCT):', updateData);
             
             const response = await axios.patch(
                 `${BASE_URL}/api/products/${editingProduct.id}/`,
@@ -119,9 +136,8 @@ const AdminDashboard = () => {
                 }
             );
             
-            console.log('✅ UPDATED:', response.data);
+            console.log('✅ PRODUCT UPDATED:', response.data);
             
-            // Update local state
             setData(prev => ({
                 ...prev,
                 products: prev.products.map(p => 
@@ -137,14 +153,69 @@ const AdminDashboard = () => {
             }, 2000);
             
         } catch (err) {
-            console.error('❌ Update error:', err.response?.data);
+            console.error('❌ Product error:', err.response?.data);
             setError(err.response?.data?.detail || 'Failed to update product');
         } finally {
             setUpdatingProduct(false);
         }
     };
 
-    // Filter data based on date range
+    const updateRecipe = async (e) => {
+        e.preventDefault();
+        if (!editingRecipe) return;
+        
+        setUpdatingRecipe(true);
+        try {
+            const accessToken = localStorage.getItem('access_token');
+            
+            const updateData = {
+                title: editingRecipe.title,
+                description: editingRecipe.description,
+                ingredients: editingRecipe.ingredients,
+                instructions: editingRecipe.instructions,
+                prep_time: editingRecipe.prep_time,
+                cook_time: editingRecipe.cook_time,
+                servings: parseInt(editingRecipe.servings),
+                category: editingRecipe.category_id || null
+            };
+            
+            console.log('📤 SENDING (RECIPE MODEL):', updateData);
+            
+            const response = await axios.patch(
+                `${BASE_URL}/api/recipes/${editingRecipe.id}/`,
+                updateData,
+                { 
+                    headers: { 
+                        Authorization: `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            
+            console.log('✅ RECIPE UPDATED:', response.data);
+            
+            setData(prev => ({
+                ...prev,
+                recipes: prev.recipes.map(r => 
+                    r.id === editingRecipe.id ? response.data : r
+                )
+            }));
+            
+            setEditSuccess('Recipe updated successfully! ✅');
+            setTimeout(() => {
+                setEditSuccess('');
+                setShowEditModal(false);
+                setEditingRecipe(null);
+            }, 2000);
+            
+        } catch (err) {
+            console.error('❌ Recipe error:', err.response?.data);
+            setError(err.response?.data?.detail || 'Failed to update recipe');
+        } finally {
+            setUpdatingRecipe(false);
+        }
+    };
+
     const filterDataByDate = (items, dateField = 'created_at') => {
         if (filterDateRange === 'all') return items;
         
@@ -190,7 +261,6 @@ const AdminDashboard = () => {
         });
     };
 
-    // Filter data based on search query
     const filterDataBySearch = (items, type) => {
         if (!searchQuery) return items;
         
@@ -207,6 +277,14 @@ const AdminDashboard = () => {
                     product.name.toLowerCase().includes(query) || 
                     product.description.toLowerCase().includes(query) ||
                     (product.category?.name && product.category.name.toLowerCase().includes(query))
+                );
+            case 'recipes':
+                return items.filter(recipe => 
+                    recipe.title.toLowerCase().includes(query) || 
+                    recipe.description.toLowerCase().includes(query) ||
+                    recipe.ingredients.toLowerCase().includes(query) ||
+                    (recipe.category?.name && recipe.category.name.toLowerCase().includes(query)) ||
+                    (recipe.tags_list && recipe.tags_list.some(tag => tag.toLowerCase().includes(query)))
                 );
             case 'orders':
                 return items.filter(order => 
@@ -230,15 +308,19 @@ const AdminDashboard = () => {
         }
     };
 
+    // ✅ UPDATED TABS WITH RECIPE CATEGORIES!
     const tabs = [
         { id: 'overview', label: 'Overview', icon: '📊' },
         { id: 'users', label: 'Users', icon: '👥' },
         { id: 'products', label: 'Products', icon: '🛍️' },
+        { id: 'recipes', label: 'Recipes', icon: '👨‍🍳' },
         { id: 'orders', label: 'Orders', icon: '📦' },
         { id: 'payments', label: 'Payments', icon: '💳' },
         { id: 'add-product', label: 'Add Product', icon: '➕' },
         { id: 'add-category', label: 'Add Category', icon: '📂' },
-        { id: 'create-order', label: 'Create Order', icon: '🛒' },
+        { id: 'add-recipe-category', label: 'Add Recipe Category', icon: '🍳' }, 
+        { id: 'recipe-categories', label: 'Recipe Categories', icon: '📁' },     
+        { id: 'add-recipe', label: 'Add Recipe', icon: '➕' },
     ];
 
     const getFilteredData = (type) => {
@@ -251,6 +333,7 @@ const AdminDashboard = () => {
                 break;
             case 'products':
             case 'orders':
+            case 'recipes':
                 items = data[type];
                 break;
             case 'payments':
@@ -287,9 +370,8 @@ const AdminDashboard = () => {
                     </div>
                 )}
                 
-                {/* Stats Overview */}
                 {activeTab === 'overview' && !isLoading && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                             <div className="flex items-center">
                                 <div className="p-3 bg-blue-100 rounded-lg mr-4">
@@ -309,6 +391,17 @@ const AdminDashboard = () => {
                                 <div>
                                     <p className="text-gray-500 text-sm">Total Products</p>
                                     <p className="text-2xl font-bold">{stats.totalProducts}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                            <div className="flex items-center">
+                                <div className="p-3 bg-orange-100 rounded-lg mr-4">
+                                    <span className="text-2xl">👨‍🍳</span>
+                                </div>
+                                <div>
+                                    <p className="text-gray-500 text-sm">Total Recipes</p>
+                                    <p className="text-2xl font-bold">{stats.totalRecipes}</p>
                                 </div>
                             </div>
                         </div>
@@ -337,8 +430,7 @@ const AdminDashboard = () => {
                     </div>
                 )}
                 
-                {/* Filters */}
-                {(activeTab === 'users' || activeTab === 'products' || activeTab === 'orders' || activeTab === 'payments') && !isLoading && (
+                {(activeTab === 'users' || activeTab === 'products' || activeTab === 'recipes' || activeTab === 'orders' || activeTab === 'payments') && !isLoading && (
                     <div className="bg-white p-4 rounded-xl shadow-sm mb-6">
                         <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
                             <div className="flex-1">
@@ -385,7 +477,6 @@ const AdminDashboard = () => {
                     </div>
                 )}
                 
-                {/* Tabs */}
                 <div className="mb-6">
                     <div className="flex overflow-x-auto space-x-4 border-b">
                         {tabs.map(tab => (
@@ -439,17 +530,17 @@ const AdminDashboard = () => {
                                         </div>
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-medium mb-3">New Users</h3>
+                                        <h3 className="text-lg font-medium mb-3">New Recipes</h3>
                                         <div className="border rounded-lg overflow-hidden">
-                                            {data.users.slice(0, 5).map(user => (
-                                                <div key={user.id} className="p-3 border-b last:border-b-0 hover:bg-gray-50">
-                                                    <div className="font-medium">{user.full_name}</div>
-                                                    <div className="text-sm text-gray-500">{user.email}</div>
+                                            {data.recipes?.slice(0, 5).map(recipe => (
+                                                <div key={recipe.id} className="p-3 border-b last:border-b-0 hover:bg-gray-50">
+                                                    <div className="font-medium">{recipe.title}</div>
+                                                    <div className="text-sm text-gray-500">{recipe.category?.name || 'No Category'}</div>
                                                     <div className="text-sm mt-1">
-                                                        Joined: {new Date(user.date_joined).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}
+                                                        Created: {new Date(recipe.created_at).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}
                                                     </div>
                                                 </div>
-                                            ))}
+                                            )) || []}
                                         </div>
                                     </div>
                                 </div>
@@ -501,7 +592,6 @@ const AdminDashboard = () => {
                             </div>
                         )}
                         
-                        {/* ✅ MODEL-PERFECT PRODUCTS SECTION */}
                         {activeTab === 'products' && (
                             <div>
                                 <div className="flex justify-between items-center mb-4">
@@ -511,7 +601,6 @@ const AdminDashboard = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {getFilteredData('products').map(product => (
                                         <div key={product.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow relative">
-                                            {/* ✅ EDIT BUTTON */}
                                             <button
                                                 onClick={() => handleEditProduct(product)}
                                                 className="absolute top-3 right-3 p-2 bg-white rounded-full hover:bg-gray-50 z-20 shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-200"
@@ -553,7 +642,70 @@ const AdminDashboard = () => {
                             </div>
                         )}
                         
-                        {/* Orders & Payments tabs unchanged */}
+                        {activeTab === 'recipes' && (
+                            <div>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-xl font-semibold">Recipes</h2>
+                                    <span className="text-gray-500">{getFilteredData('recipes').length} recipes</span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {getFilteredData('recipes').map(recipe => (
+                                        <div key={recipe.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow relative">
+                                            <button
+                                                onClick={() => handleEditRecipe(recipe)}
+                                                className="absolute top-3 right-3 p-2 bg-white rounded-full hover:bg-gray-50 z-20 shadow-lg hover:shadow-xl transform hover:scale-110 transition-all duration-200"
+                                                title="Edit Recipe"
+                                            >
+                                                <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                </svg>
+                                            </button>
+                                            
+                                            <div className="h-48 bg-gray-200 rounded-lg overflow-hidden mb-3 relative">
+                                                {recipe.image_url ? (
+                                                    <img
+                                                        src={recipe.image_url}
+                                                        alt={recipe.title}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                        No Image
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <h3 className="text-lg font-medium">{recipe.title}</h3>
+                                            <p className="text-gray-600 text-sm mt-1 line-clamp-2">{recipe.description}</p>
+                                            <div className="flex justify-between items-center mt-3">
+                                                <p className="text-orange-600 font-semibold">
+                                                    ⏱️ {recipe.prep_time} + {recipe.cook_time}
+                                                </p>
+                                                <p className="text-sm text-gray-500">Serves: {recipe.servings}</p>
+                                            </div>
+                                            <div className="mt-2 text-sm text-gray-500">
+                                                Category: {recipe.category?.name || 'None'}
+                                            </div>
+                                            {recipe.tags_list && recipe.tags_list.length > 0 && (
+                                                <div className="mt-2 flex flex-wrap gap-1">
+                                                    {recipe.tags_list.slice(0, 3).map(tag => (
+                                                        <span key={tag} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                    {recipe.tags_list.length > 3 && (
+                                                        <span className="text-xs text-gray-500">+{recipe.tags_list.length - 3}</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                            <p className="text-xs text-gray-400 mt-2">
+                                                Created: {new Date(recipe.created_at).toLocaleDateString('en-US', { timeZone: 'Africa/Nairobi' })}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
                         {activeTab === 'orders' && (
                             <div>
                                 <div className="flex justify-between items-center mb-4">
@@ -664,24 +816,28 @@ const AdminDashboard = () => {
                             </div>
                         )}
                         
+                        {/* ✅ FORMS WITH NEW CATEGORY TABS */}
                         {activeTab === 'add-product' && <AddProductForm />}
                         {activeTab === 'add-category' && <AddCategoryForm />}
-                        {activeTab === 'create-order' && <CreateOrderForm />}
+                        {activeTab === 'add-recipe-category' && <AddRecipeCategory />}  
+                        {activeTab === 'recipe-categories' && <RecipeCategories />}      
+                        {activeTab === 'add-recipe' && <AddRecipeForm />}
                     </div>
                 )}
 
-                {/* ✅ MODEL-PERFECT: EDIT MODAL (4 FIELDS ONLY!) */}
                 {showEditModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                        <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                            {/* Header */}
+                        <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
                             <div className="p-6 border-b border-gray-200">
                                 <div className="flex items-center justify-between">
-                                    <h2 className="text-2xl font-bold text-gray-800">Edit Product</h2>
+                                    <h2 className="text-2xl font-bold text-gray-800">
+                                        {editingProduct ? 'Edit Product' : 'Edit Recipe'}
+                                    </h2>
                                     <button
                                         onClick={() => {
                                             setShowEditModal(false);
                                             setEditingProduct(null);
+                                            setEditingRecipe(null);
                                         }}
                                         className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                                     >
@@ -702,73 +858,189 @@ const AdminDashboard = () => {
                                 )}
                             </div>
 
-                            {/* ✅ 4 FIELDS ONLY: MODEL PERFECT */}
-                            <form onSubmit={updateProduct} className="p-6 space-y-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
-                                    <input
-                                        type="text"
-                                        value={editingProduct?.name || ''}
-                                        onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                        required
-                                    />
-                                </div>
+                            <form onSubmit={editingProduct ? updateProduct : updateRecipe} className="p-6 space-y-6">
+                                {editingProduct ? (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
+                                            <input
+                                                type="text"
+                                                value={editingProduct?.name || ''}
+                                                onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                                required
+                                            />
+                                        </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                                    <textarea
-                                        rows="3"
-                                        value={editingProduct?.description || ''}
-                                        onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                    />
-                                </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                            <textarea
+                                                rows="3"
+                                                value={editingProduct?.description || ''}
+                                                onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                            />
+                                        </div>
 
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Price (KSh)</label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            value={editingProduct?.price || ''}
-                                            onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Stock</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            value={editingProduct?.stock || ''}
-                                            onChange={(e) => setEditingProduct({ ...editingProduct, stock: e.target.value })}
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                                            required
-                                        />
-                                    </div>
-                                </div>
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Price (KSh)</label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={editingProduct?.price || ''}
+                                                    onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })}
+                                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Stock</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={editingProduct?.stock || ''}
+                                                    onChange={(e) => setEditingProduct({ ...editingProduct, stock: e.target.value })}
+                                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
 
-                                {/* ✅ MODEL INFO: Read-only */}
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="p-3 bg-gray-50 rounded-lg">
-                                        <p className="text-sm text-gray-500">📂 Category</p>
-                                        <p className="font-medium">{editingProduct?.category?.name || 'None'}</p>
-                                    </div>
-                                    <div className="p-3 bg-gray-50 rounded-lg">
-                                        <p className="text-sm text-gray-500">🖼️ Images</p>
-                                        <p className="font-medium">{editingProduct?.images?.length || 0} current</p>
-                                    </div>
-                                </div>
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="p-3 bg-gray-50 rounded-lg">
+                                                <p className="text-sm text-gray-500">📂 Category</p>
+                                                <p className="font-medium">{editingProduct?.category?.name || 'None'}</p>
+                                            </div>
+                                            <div className="p-3 bg-gray-50 rounded-lg">
+                                                <p className="text-sm text-gray-500">🖼️ Images</p>
+                                                <p className="font-medium">{editingProduct?.images?.length || 0} current</p>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Recipe Title</label>
+                                            <input
+                                                type="text"
+                                                value={editingRecipe?.title || ''}
+                                                onChange={(e) => setEditingRecipe({ ...editingRecipe, title: e.target.value })}
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                            <textarea
+                                                rows="2"
+                                                value={editingRecipe?.description || ''}
+                                                onChange={(e) => setEditingRecipe({ ...editingRecipe, description: e.target.value })}
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Prep Time</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. 10 minutes"
+                                                    value={editingRecipe?.prep_time || ''}
+                                                    onChange={(e) => setEditingRecipe({ ...editingRecipe, prep_time: e.target.value })}
+                                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Cook Time</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="e.g. 15 minutes"
+                                                    value={editingRecipe?.cook_time || ''}
+                                                    onChange={(e) => setEditingRecipe({ ...editingRecipe, cook_time: e.target.value })}
+                                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Servings</label>
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    value={editingRecipe?.servings || ''}
+                                                    onChange={(e) => setEditingRecipe({ ...editingRecipe, servings: e.target.value })}
+                                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                                                <select
+                                                    value={editingRecipe?.category_id || ''}
+                                                    onChange={(e) => setEditingRecipe({ 
+                                                        ...editingRecipe, 
+                                                        category_id: e.target.value ? parseInt(e.target.value) : null,
+                                                        category: recipeCategories.find(c => c.id === parseInt(e.target.value))
+                                                    })}
+                                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                                >
+                                                    <option value="">No Category</option>
+                                                    {recipeCategories.map(cat => (
+                                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Ingredients</label>
+                                            <textarea
+                                                rows="3"
+                                                placeholder="List ingredients separated by commas or line breaks"
+                                                value={editingRecipe?.ingredients || ''}
+                                                onChange={(e) => setEditingRecipe({ ...editingRecipe, ingredients: e.target.value })}
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Instructions</label>
+                                            <textarea
+                                                rows="4"
+                                                placeholder="Step-by-step cooking instructions"
+                                                value={editingRecipe?.instructions || ''}
+                                                onChange={(e) => setEditingRecipe({ ...editingRecipe, instructions: e.target.value })}
+                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="p-3 bg-gray-50 rounded-lg">
+                                                <p className="text-sm text-gray-500">🖼️ Image</p>
+                                                <p className="font-medium">{editingRecipe?.image_url ? 'Uploaded' : 'None'}</p>
+                                            </div>
+                                            <div className="p-3 bg-gray-50 rounded-lg">
+                                                <p className="text-sm text-gray-500">🏷️ Tags</p>
+                                                <p className="font-medium">{editingRecipe?.tags_list?.length || 0} current</p>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
 
                                 <div className="flex gap-4 pt-4">
                                     <button
                                         type="submit"
-                                        disabled={updatingProduct}
+                                        disabled={(editingProduct ? updatingProduct : updatingRecipe)}
                                         className="flex-1 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
                                     >
-                                        {updatingProduct ? (
+                                        {(editingProduct ? updatingProduct : updatingRecipe) ? (
                                             <>
                                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                                 <span>Updating...</span>
@@ -787,6 +1059,7 @@ const AdminDashboard = () => {
                                         onClick={() => {
                                             setShowEditModal(false);
                                             setEditingProduct(null);
+                                            setEditingRecipe(null);
                                         }}
                                         className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
                                     >

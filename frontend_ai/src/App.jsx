@@ -1,4 +1,3 @@
-
 import { Routes, Route } from 'react-router-dom';
 import Login from './components/Login';
 import Landing from './components/Landing';
@@ -19,7 +18,9 @@ import AddCategoryForm from './components/AddCategoryForm';
 import CreateOrderForm from './components/CreateOrderForm';
 import AddProductForm from './components/AddProductForm';
 import AdminOrderDetails from './components/AdminOrderDetails';
-
+import AddRecipeForm from './components/AddRecipeForm';
+import AddRecipeCategory from './components/AddRecipeCategory';  
+import RecipeCategories from './components/RecipeCategories';   
 function App() {
   return (
     <Routes>
@@ -37,6 +38,9 @@ function App() {
       <Route path="/orders" element={<Orders />} />
       <Route path="/payments" element={<Payments />} />
       <Route path="/cart" element={<Cart />} />
+      <Route path="/AddRecipeForm" element={<AddRecipeForm />} />
+      <Route path="/AddRecipeCategory" element={<AddRecipeCategory />} />  
+      <Route path="/RecipeCategories" element={<RecipeCategories />} />    
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/payment-success" element={<PaymentSuccess />} />
       <Route path="/payment-callback" element={<PaymentCallback />} />
