@@ -5,8 +5,9 @@ const Landing = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
+  // NEW: Lightbox State
+  const [lightbox, setLightbox] = useState({ open: false, image: '', alt: '' });
   
   // Organic farming focused slides
   const slides = [
@@ -27,72 +28,58 @@ const Landing = () => {
     }
   ];
 
-  // Organic products gallery
-  const products = [
+  // 7 Gallery Pictures - HIGH RES FOR LIGHTBOX
+  const gallery = [
     {
       id: 1,
-      src: 'https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      alt: 'Fresh Organic Vegetables',
-      category: 'Vegetables',
-      name: 'Seasonal Vegetables',
-      price: '$4.99',
-      unit: 'per lb'
+      src: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      highRes: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
+      alt: 'Organic Landscape 1'
     },
     {
       id: 2,
-      src: 'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      alt: 'Organic Fruits',
-      category: 'Fruits',
-      name: 'Fresh Fruits',
-      price: '$3.99',
-      unit: 'per lb'
+      src: 'https://images.unsplash.com/photo-1578943969937-638e1b9f8e26?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      highRes: 'https://images.unsplash.com/photo-1578943969937-638e1b9f8e26?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
+      alt: 'Organic Landscape 2'
     },
     {
       id: 3,
-      src: 'https://images.unsplash.com/photo-1558961360-f4be754ffb35?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      alt: 'Organic Dairy Products',
-      category: 'Dairy',
-      name: 'Dairy Products',
-      price: '$5.49',
-      unit: 'per item'
+      src: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      highRes: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
+      alt: 'Organic Landscape 3'
     },
     {
       id: 4,
-      src: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      alt: 'Farm Fresh Eggs',
-      category: 'Poultry',
-      name: 'Free-range Eggs',
-      price: '$6.99',
-      unit: 'per dozen'
+      src: 'https://images.unsplash.com/photo-1578943969702-dff36d7e12e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      highRes: 'https://images.unsplash.com/photo-1578943969702-dff36d7e12e9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
+      alt: 'Organic Landscape 4'
     },
     {
       id: 5,
-      src: 'https://images.unsplash.com/photo-1594489573857-44a39ac18a52?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      alt: 'Organic Grains',
-      category: 'Grains',
-      name: 'Whole Grains',
-      price: '$3.49',
-      unit: 'per lb'
+      src: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      highRes: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
+      alt: 'Organic Landscape 5'
     },
     {
       id: 6,
-      src: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      alt: 'Organic Herbs',
-      category: 'Herbs',
-      name: 'Fresh Herbs',
-      price: '$2.99',
-      unit: 'per bunch'
+      src: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      highRes: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
+      alt: 'Organic Landscape 6'
+    },
+    {
+      id: 7,
+      src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      highRes: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80',
+      alt: 'Organic Landscape 7'
     }
   ];
-
-  const categories = ['All', 'Vegetables', 'Fruits', 'Dairy', 'Poultry', 'Grains', 'Herbs'];
 
   // Preload images for better UX
   useEffect(() => {
     const preloadImages = () => {
       const imageUrls = [
         ...slides.map(slide => slide.image),
-        ...products.map(product => product.src)
+        ...gallery.flatMap(item => [item.src, item.highRes])
       ];
       
       imageUrls.forEach(url => {
@@ -105,6 +92,15 @@ const Landing = () => {
 
     preloadImages();
   }, []);
+
+  // NEW: Lightbox Functions
+  const openLightbox = (image, alt) => {
+    setLightbox({ open: true, image, alt });
+  };
+
+  const closeLightbox = () => {
+    setLightbox({ open: false, image: '', alt: '' });
+  };
 
   const handleScroll = useCallback(() => {
     setIsScrolled(window.scrollY > 10);
@@ -142,10 +138,6 @@ const Landing = () => {
     setIsMenuOpen(false);
   };
 
-  const filteredProducts = activeCategory === 'All' 
-    ? products 
-    : products.filter(product => product.category === activeCategory);
-
   // Loading skeleton
   if (isLoading) {
     return (
@@ -175,9 +167,8 @@ const Landing = () => {
             </div>
           </div>
           
-          {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-8">
-            {['Our Story', 'Products', 'Our Values', 'Contact'].map((item) => (
+            {['Our Story', 'Gallery', 'Our Values', 'Contact'].map((item) => (
               <button 
                 key={item}
                 onClick={() => scrollToSection(item.toLowerCase().replace(' ', '-'))}
@@ -193,16 +184,15 @@ const Landing = () => {
               to="/login" 
               className="hidden sm:block px-5 py-2.5 rounded-lg bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
             >
-              Farmer Login
+              Login
             </Link>
             <Link 
               to="/signup" 
               className="hidden sm:block px-5 py-2.5 rounded-lg bg-white text-green-700 font-semibold border-2 border-green-600 hover:bg-green-50 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
             >
-              Join as Farmer
+              Join
             </Link>
             
-            {/* Enhanced Mobile menu button */}
             <button 
               className="lg:hidden p-3 rounded-xl bg-green-50 text-green-700 hover:bg-green-100 transition-all duration-200 shadow-sm hover:shadow-md"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -221,11 +211,10 @@ const Landing = () => {
           </div>
         </div>
         
-        {/* Enhanced Mobile Navigation */}
         {isMenuOpen && (
           <div className="lg:hidden bg-white/95 backdrop-blur-md border-t border-green-100 shadow-xl animate-slideDown">
             <div className="px-6 py-4 space-y-3">
-              {['Our Story', 'Products', 'Our Values', 'Contact'].map((item) => (
+              {['Our Story', 'Gallery', 'Our Values', 'Contact'].map((item) => (
                 <button 
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase().replace(' ', '-'))}
@@ -235,17 +224,11 @@ const Landing = () => {
                 </button>
               ))}
               <div className="pt-4 border-t border-green-100 flex flex-col space-y-3">
-                <Link 
-                  to="/login" 
-                  className="px-5 py-3 rounded-lg bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md text-center"
-                >
-                  Farmer Login
+                <Link to="/login" className="px-5 py-3 rounded-lg bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md text-center">
+                  Login
                 </Link>
-                <Link 
-                  to="/signup" 
-                  className="px-5 py-3 rounded-lg bg-white text-green-700 font-semibold border-2 border-green-600 hover:bg-green-50 transition-all duration-200 shadow-sm text-center"
-                >
-                  Join as Farmer
+                <Link to="/signup" className="px-5 py-3 rounded-lg bg-white text-green-700 font-semibold border-2 border-green-600 hover:bg-green-50 transition-all duration-200 shadow-sm text-center">
+                  Join
                 </Link>
               </div>
             </div>
@@ -253,7 +236,7 @@ const Landing = () => {
         )}
       </header>
 
-      {/* Enhanced Hero Section */}
+      {/* HERO SECTION - SAME AS BEFORE */}
       <section className="relative w-full h-screen flex items-center justify-center bg-green-50 overflow-hidden pt-16">
         <div className="absolute inset-0 z-0">
           {slides.map((slide, index) => (
@@ -285,16 +268,16 @@ const Landing = () => {
                 to="/signup" 
                 className="px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 text-center text-lg flex items-center justify-center space-x-2"
               >
-                <span>Join Our Farming Network</span>
+                <span>Join Our Network</span>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                 </svg>
               </Link>
               <button 
-                onClick={() => scrollToSection('products')}
+                onClick={() => scrollToSection('gallery')}
                 className="px-8 py-4 bg-white/90 text-gray-900 font-semibold rounded-xl hover:bg-white transition-all duration-300 border-2 border-gray-200 hover:border-green-300 hover:shadow-lg transform hover:-translate-y-1 flex items-center justify-center space-x-2"
               >
-                <span>Shop Organic Products</span>
+                <span>Explore Gallery</span>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                 </svg>
@@ -303,7 +286,6 @@ const Landing = () => {
           </div>
         </div>
 
-        {/* Enhanced Carousel Controls */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex space-x-3">
           {slides.map((_, index) => (
             <button
@@ -317,7 +299,6 @@ const Landing = () => {
           ))}
         </div>
 
-        {/* Scroll indicator */}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 animate-bounce">
           <div className="w-6 h-10 border-2 border-green-600 rounded-full flex justify-center">
             <div className="w-1 h-3 bg-green-600 rounded-full mt-2 animate-pulse"></div>
@@ -325,7 +306,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Enhanced Stats Section */}
+      {/* STATS SECTION - SAME */}
       <section className="py-16 bg-white border-b border-green-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 text-center">
@@ -345,7 +326,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Enhanced About Section */}
+      {/* ABOUT SECTION - SAME */}
       <section id="our-story" className="py-20 bg-gradient-to-br from-green-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -357,58 +338,107 @@ const Landing = () => {
                 Growing Together, Naturally
               </h2>
               <div className="space-y-4 text-gray-700 text-lg leading-relaxed">
-                <p>
-                  Founded with a passion for sustainable agriculture, AriFarm began as a small family-owned organic farm dedicated to providing fresh, chemical-free produce to our local community.
-                </p>
-                <p>
-                  What started as a humble venture has grown into a network of certified organic farmers united by a common vision: to promote healthy living through natural farming practices while preserving our environment for future generations.
-                </p>
-                <p>
-                  Our journey is rooted in the belief that everyone deserves access to pure, nutritious food grown with care and respect for nature.
-                </p>
+                <p>Founded with a passion for sustainable agriculture, AriFarm began as a small family-owned organic farm dedicated to providing fresh, chemical-free produce to our local community.</p>
+                <p>What started as a humble venture has grown into a network of certified organic farmers united by a common vision: to promote healthy living through natural farming practices while preserving our environment for future generations.</p>
+                <p>Our journey is rooted in the belief that everyone deserves access to pure, nutritious food grown with care and respect for nature.</p>
               </div>
               <div className="mt-8 p-6 bg-white rounded-2xl shadow-lg border border-green-100 hover:shadow-xl transition-shadow duration-300">
                 <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center space-x-2">
                   <span className="text-green-600">🎯</span>
                   <span>Our Mission</span>
                 </h3>
-                <p className="text-gray-700 leading-relaxed">
-                  To provide 100% organic, fresh produce to health-conscious consumers while supporting local farmers through sustainable agricultural practices and community engagement.
-                </p>
+                <p className="text-gray-700 leading-relaxed">To provide 100% organic, fresh produce to health-conscious consumers while supporting local farmers through sustainable agricultural practices and community engagement.</p>
               </div>
             </div>
             <div className="order-1 lg:order-2 grid grid-cols-2 gap-4 lg:gap-6">
               <div className="space-y-4 lg:space-y-6">
                 <div className="aspect-square bg-green-200 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                  <img src="https://images.unsplash.com/photo-1574943320219-553eb213f72d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Organic farming" className="w-full h-full object-cover" loading="lazy" />
+                </div>
+                <div className="aspect-square bg-green-300 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                  <img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Fresh produce" className="w-full h-full object-cover" loading="lazy" />
+                </div>
+              </div>
+              <div className="space-y-4 lg:space-y-6 pt-8 lg:pt-12">
+                <div className="aspect-square bg-green-400 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                  <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Farm landscape" className="w-full h-full object-cover" loading="lazy" />
+                </div>
+                <div className="aspect-square bg-green-500 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                  <img src="https://images.unsplash.com/photo-1574943320219-553eb213f72d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Harvest" className="w-full h-full object-cover" loading="lazy" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL GALLERY - NO LINKS, PURE LIGHTBOX VIEWING! */}
+      <section id="gallery" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <div className="order-2 lg:order-1">
+              <div className="inline-flex items-center px-4 py-2 rounded-full bg-green-100 text-green-800 text-sm font-medium mb-6">
+                Gallery
+              </div>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
+                Our Gallery
+              </h2>
+              <div className="space-y-4 text-gray-700 text-lg leading-relaxed">
+                <p>Explore our collection of 7 stunning organic landscapes captured in their natural beauty.</p>
+                <p>Each image showcases the dedication to sustainable practices and the vibrant colors of nature.</p>
+              </div>
+              <div className="mt-8 p-6 bg-white rounded-2xl shadow-lg border border-green-100 hover:shadow-xl transition-shadow duration-300">
+                <h3 className="text-xl font-semibold text-gray-900 mb-3 flex items-center space-x-2">
+                  <span className="text-green-600">🖼️</span>
+                  <span>Our Collection</span>
+                </h3>
+                <p className="text-gray-700 leading-relaxed">7 curated images • High resolution • Sustainable beauty</p>
+              </div>
+            </div>
+            <div className="order-1 lg:order-2 grid grid-cols-2 gap-4 lg:gap-6">
+              <div className="space-y-4 lg:space-y-6">
+                <div 
+                  onClick={() => openLightbox(gallery[0].highRes, gallery[0].alt)}
+                  className="aspect-square bg-green-200 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer"
+                >
                   <img 
-                    src="https://images.unsplash.com/photo-1574943320219-553eb213f72d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
-                    alt="Organic farming" 
+                    src={gallery[0].src} 
+                    alt={gallery[0].alt} 
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
                 </div>
-                <div className="aspect-square bg-green-300 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <div 
+                  onClick={() => openLightbox(gallery[1].highRes, gallery[1].alt)}
+                  className="aspect-square bg-green-300 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer"
+                >
                   <img 
-                    src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
-                    alt="Fresh produce" 
+                    src={gallery[1].src} 
+                    alt={gallery[1].alt} 
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
                 </div>
               </div>
               <div className="space-y-4 lg:space-y-6 pt-8 lg:pt-12">
-                <div className="aspect-square bg-green-400 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <div 
+                  onClick={() => openLightbox(gallery[2].highRes, gallery[2].alt)}
+                  className="aspect-square bg-green-400 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer"
+                >
                   <img 
-                    src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
-                    alt="Farm landscape" 
+                    src={gallery[2].src} 
+                    alt={gallery[2].alt} 
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
                 </div>
-                <div className="aspect-square bg-green-500 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+                <div 
+                  onClick={() => openLightbox(gallery[3].highRes, gallery[3].alt)}
+                  className="aspect-square bg-green-500 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer"
+                >
                   <img 
-                    src="https://images.unsplash.com/photo-1574943320219-553eb213f72d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
-                    alt="Harvest" 
+                    src={gallery[3].src} 
+                    alt={gallery[3].alt} 
                     className="w-full h-full object-cover"
                     loading="lazy"
                   />
@@ -416,92 +446,51 @@ const Landing = () => {
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Enhanced Products Section */}
-      <section id="products" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-green-100 text-green-800 text-sm font-medium mb-4">
-              Fresh from our farm
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">Our Organic Products</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Discover our range of certified organic products, carefully grown and harvested using sustainable methods.
-            </p>
-          </div>
-          
-          {/* Enhanced Category Filter */}
-          <div className="flex flex-wrap justify-center gap-3 mb-12 px-4">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setActiveCategory(category)}
-                className={`px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105 ${
-                  activeCategory === category
-                    ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg'
-                    : 'bg-green-50 text-green-700 hover:bg-green-100 shadow-sm'
-                }`}
+          {/* Additional 3 Images Below */}
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {gallery.slice(4, 7).map((item) => (
+              <div 
+                key={item.id}
+                onClick={() => openLightbox(item.highRes, item.alt)}
+                className="group aspect-video bg-green-100 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 cursor-pointer"
               >
-                {category}
-              </button>
-            ))}
-          </div>
-          
-          {/* Enhanced Products Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {filteredProducts.map((product) => (
-              <div key={product.id} className="group cursor-pointer overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 bg-white border border-green-100 hover:border-green-200">
-                <div className="aspect-video bg-green-100 relative overflow-hidden">
-                  <img 
-                    src={product.src} 
-                    alt={product.alt}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    loading="lazy"
-                  />
-                  <div className="absolute top-4 right-4">
-                    <span className="px-3 py-1 bg-green-600 text-white text-sm font-medium rounded-full shadow-md">
-                      {product.category}
-                    </span>
-                  </div>
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-green-700 transition-colors duration-200">
-                    {product.name}
-                  </h3>
-                  <p className="text-gray-600 mb-4 leading-relaxed">
-                    Freshly harvested organic {product.name.toLowerCase()} grown using natural methods.
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-2xl font-bold text-green-600">{product.price}</span>
-                      <span className="text-sm text-gray-500 ml-2">{product.unit}</span>
-                    </div>
-                    <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center space-x-2">
-                      <span>Add to Cart</span>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
+                <img 
+                  src={item.src} 
+                  alt={item.alt}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  loading="lazy"
+                />
               </div>
             ))}
           </div>
-
-          {filteredProducts.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🌱</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No products found</h3>
-              <p className="text-gray-600">We're currently updating our inventory for this category.</p>
-            </div>
-          )}
         </div>
       </section>
 
-      {/* Enhanced Values Section */}
+      {/* NEW: LIGHTBOX POPUP - STAYS ON SAME PAGE! */}
+      {lightbox.open && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4 animate-fadeIn"
+          onClick={closeLightbox}
+        >
+          <div className="relative max-w-6xl w-full max-h-screen overflow-auto">
+            <button
+              onClick={closeLightbox}
+              className="absolute -top-12 right-0 text-white text-3xl hover:text-green-400 transition-colors duration-200 z-10"
+            >
+              ✕
+            </button>
+            <img
+              src={lightbox.image}
+              alt={lightbox.alt}
+              className="w-full h-auto max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            />
+            <p className="text-white text-center mt-4 text-lg">{lightbox.alt}</p>
+          </div>
+        </div>
+      )}
+
+      {/* REST OF SECTIONS - SAME AS BEFORE */}
       <section id="our-values" className="py-20 bg-gradient-to-br from-green-50 to-emerald-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -509,49 +498,21 @@ const Landing = () => {
               What drives us
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">Our Core Values</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              The principles that guide everything we do at AriFarm Organic Farms
-            </p>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">The principles that guide everything we do at AriFarm Organic Farms</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
             {[
-              {
-                icon: "🌱",
-                title: "Pure Organic",
-                description: "100% chemical-free farming practices ensuring the highest quality natural produce."
-              },
-              {
-                icon: "💚",
-                title: "Sustainability",
-                description: "Commitment to eco-friendly methods that protect our environment for future generations."
-              },
-              {
-                icon: "🤝",
-                title: "Community",
-                description: "Building strong relationships with local farmers and health-conscious consumers."
-              },
-              {
-                icon: "✨",
-                title: "Quality",
-                description: "Uncompromising standards in every product we grow and deliver to your table."
-              },
-              {
-                icon: "🌍",
-                title: "Innovation",
-                description: "Embracing modern sustainable farming techniques while honoring traditional wisdom."
-              },
-              {
-                icon: "🏆",
-                title: "Integrity",
-                description: "Transparent operations and honest relationships with all our stakeholders."
-              }
+              { icon: "🌱", title: "Pure Organic", description: "100% chemical-free farming practices ensuring the highest quality natural produce." },
+              { icon: "💚", title: "Sustainability", description: "Commitment to eco-friendly methods that protect our environment for future generations." },
+              { icon: "🤝", title: "Community", description: "Building strong relationships with local farmers and health-conscious consumers." },
+              { icon: "✨", title: "Quality", description: "Uncompromising standards in every product we grow and deliver to your table." },
+              { icon: "🌍", title: "Innovation", description: "Embracing modern sustainable farming techniques while honoring traditional wisdom." },
+              { icon: "🏆", title: "Integrity", description: "Transparent operations and honest relationships with all our stakeholders." }
             ].map((value, index) => (
               <div key={index} className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 group hover:-translate-y-2 border border-green-100">
                 <div className="text-4xl mb-4 transform group-hover:scale-110 transition-transform duration-300">{value.icon}</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-4 group-hover:text-green-700 transition-colors duration-200">
-                  {value.title}
-                </h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-4 group-hover:text-green-700 transition-colors duration-200">{value.title}</h3>
                 <p className="text-gray-600 leading-relaxed">{value.description}</p>
               </div>
             ))}
@@ -559,94 +520,44 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Enhanced CTA Section for Farmers */}
       <section className="py-20 bg-gradient-to-r from-green-600 to-emerald-700 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-white/5 rounded-full -translate-x-48 translate-y-48"></div>
         
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
-            Join Our Organic Farming Network
-          </h2>
-          <p className="text-xl text-green-100 mb-8 max-w-2xl mx-auto leading-relaxed">
-            Connect with health-conscious consumers and grow your organic farming business with AriFarm. Together, we can make organic food accessible to everyone.
-          </p>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight">Join Our Organic Network</h2>
+          <p className="text-xl text-green-100 mb-8 max-w-2xl mx-auto leading-relaxed">Connect with health-conscious consumers and grow your organic business with AriFarm. Together, we can make organic food accessible to everyone.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              to="/signup" 
-              className="px-8 py-4 bg-white text-green-600 font-semibold rounded-xl hover:bg-green-50 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 text-lg flex items-center justify-center space-x-2"
-            >
-              <span>Register Your Farm</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-              </svg>
+            <Link to="/signup" className="px-8 py-4 bg-white text-green-600 font-semibold rounded-xl hover:bg-green-50 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 text-lg flex items-center justify-center space-x-2">
+              <span>Join Now</span>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
             </Link>
-            <button 
-              onClick={() => scrollToSection('contact')}
-              className="px-8 py-4 bg-transparent text-white font-semibold rounded-xl hover:bg-white/10 transition-all duration-300 border-2 border-white hover:border-green-200 text-lg flex items-center justify-center space-x-2"
-            >
+            <button onClick={() => scrollToSection('contact')} className="px-8 py-4 bg-transparent text-white font-semibold rounded-xl hover:bg-white/10 transition-all duration-300 border-2 border-white hover:border-green-200 text-lg flex items-center justify-center space-x-2">
               <span>Learn More</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
           </div>
         </div>
       </section>
 
-      {/* Enhanced Contact Section */}
       <section id="contact" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
             <div>
-              <div className="inline-flex items-center px-4 py-2 rounded-full bg-green-100 text-green-800 text-sm font-medium mb-6">
-                Get in touch
-              </div>
+              <div className="inline-flex items-center px-4 py-2 rounded-full bg-green-100 text-green-800 text-sm font-medium mb-6">Get in touch</div>
               <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">Let's Connect</h2>
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                Interested in our organic products or want to join our farming network? We'd love to hear from you and help you discover the best of organic farming.
-              </p>
+              <p className="text-lg text-gray-600 mb-8 leading-relaxed">Interested in our organic products or want to join our network? We'd love to hear from you and help you discover the best of organic farming.</p>
               
               <div className="space-y-6">
                 {[
-                  {
-                    icon: (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                      </svg>
-                    ),
-                    title: "Visit Our Farm",
-                    description: "123 Organic Valley, Green County"
-                  },
-                  {
-                    icon: (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                      </svg>
-                    ),
-                    title: "Call Us",
-                    description: "+1 (555) 123-ARIA"
-                  },
-                  {
-                    icon: (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                      </svg>
-                    ),
-                    title: "Email Us",
-                    description: "info@arifarm.com"
-                  }
+                  { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>, title: "Visit Our Farm", description: "123 Organic Valley, Green County" },
+                  { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>, title: "Call Us", description: "+1 (555) 123-ARIA" },
+                  { icon: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>, title: "Email Us", description: "info@arifarm.com" }
                 ].map((item, index) => (
                   <div key={index} className="flex items-center space-x-4 p-4 rounded-xl hover:bg-green-50 transition-colors duration-200">
-                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-green-600 flex-shrink-0">
-                      {item.icon}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{item.title}</h3>
-                      <p className="text-gray-600">{item.description}</p>
-                    </div>
+                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-green-600 flex-shrink-0">{item.icon}</div>
+                    <div><h3 className="font-semibold text-gray-900">{item.title}</h3><p className="text-gray-600">{item.description}</p></div>
                   </div>
                 ))}
               </div>
@@ -655,54 +566,14 @@ const Landing = () => {
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 shadow-lg border border-green-100">
               <form className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="name" className="block text-gray-900 font-medium mb-2">Name *</label>
-                    <input
-                      type="text"
-                      id="name"
-                      className="w-full px-4 py-3 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-200 bg-white"
-                      placeholder="Your Name"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-gray-900 font-medium mb-2">Email *</label>
-                    <input
-                      type="email"
-                      id="email"
-                      className="w-full px-4 py-3 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-200 bg-white"
-                      placeholder="Your Email"
-                      required
-                    />
-                  </div>
+                  <div><label htmlFor="name" className="block text-gray-900 font-medium mb-2">Name *</label><input type="text" id="name" className="w-full px-4 py-3 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-200 bg-white" placeholder="Your Name" required /></div>
+                  <div><label htmlFor="email" className="block text-gray-900 font-medium mb-2">Email *</label><input type="email" id="email" className="w-full px-4 py-3 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-200 bg-white" placeholder="Your Email" required /></div>
                 </div>
-                <div>
-                  <label htmlFor="subject" className="block text-gray-900 font-medium mb-2">Subject</label>
-                  <input
-                    type="text"
-                    id="subject"
-                    className="w-full px-4 py-3 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-200 bg-white"
-                    placeholder="What's this about?"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="message" className="block text-gray-900 font-medium mb-2">Message *</label>
-                  <textarea
-                    id="message"
-                    className="w-full px-4 py-3 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-200 bg-white resize-none"
-                    rows="5"
-                    placeholder="Your Message"
-                    required
-                  ></textarea>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-2"
-                >
+                <div><label htmlFor="subject" className="block text-gray-900 font-medium mb-2">Subject</label><input type="text" id="subject" className="w-full px-4 py-3 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-200 bg-white" placeholder="What's this about?" /></div>
+                <div><label htmlFor="message" className="block text-gray-900 font-medium mb-2">Message *</label><textarea id="message" className="w-full px-4 py-3 rounded-lg border border-green-200 focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-200 bg-white resize-none" rows="5" placeholder="Your Message" required></textarea></div>
+                <button type="submit" className="w-full px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center space-x-2">
                   <span>Send Message</span>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                  </svg>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                 </button>
               </form>
             </div>
@@ -710,60 +581,33 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Enhanced Footer */}
       <footer className="bg-gray-900 text-white pt-16 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 mb-12">
             <div className="lg:col-span-1">
               <div className="flex items-center space-x-3 mb-6">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-lg">🌱</span>
-                </div>
-                <div>
-                  <span className="text-xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">AriFarm</span>
-                  <span className="block text-xs text-green-400 font-medium">Organic Farms</span>
-                </div>
+                <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-full flex items-center justify-center shadow-md"><span className="text-white font-bold text-lg">🌱</span></div>
+                <div><span className="text-xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">AriFarm</span><span className="block text-xs text-green-400 font-medium">Organic Farms</span></div>
               </div>
-              <p className="text-gray-400 text-sm leading-relaxed mb-4">
-                Connecting organic farmers with health-conscious consumers since 2008. Together, we're growing a healthier future.
-              </p>
+              <p className="text-gray-400 text-sm leading-relaxed mb-4">Connecting organic farmers with health-conscious consumers since 2008. Together, we're growing a healthier future.</p>
               <div className="flex space-x-3">
                 {['Facebook', 'Instagram', 'Twitter', 'YouTube'].map((social, index) => (
-                  <a 
-                    key={index} 
-                    href="#" 
-                    className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center text-gray-400 hover:text-white hover:bg-green-600 transition-all duration-200 hover:scale-110"
-                    aria-label={social}
-                  >
-                    {social[0]}
-                  </a>
+                  <a key={index} href="#" className="w-10 h-10 bg-gray-800 rounded-xl flex items-center justify-center text-gray-400 hover:text-white hover:bg-green-600 transition-all duration-200 hover:scale-110" aria-label={social}>{social[0]}</a>
                 ))}
               </div>
             </div>
             
             {[
-              {
-                title: "Quick Links",
-                links: ["Our Story", "Products", "Our Values", "Farmer Login"]
-              },
-              {
-                title: "Products",
-                links: ["Vegetables", "Fruits", "Dairy", "Grains", "Herbs"]
-              },
-              {
-                title: "Support",
-                links: ["Contact Us", "Shipping Info", "Returns", "FAQ", "Farmers Guide"]
-              }
+              { title: "Quick Links", links: ["Our Story", "Gallery", "Our Values", "Login"] },
+              { title: "Explore", links: ["Gallery 1", "Gallery 2", "Gallery 3", "Gallery 4"] },
+              { title: "Support", links: ["Contact Us", "Shipping Info", "Returns", "FAQ"] }
             ].map((column, index) => (
               <div key={index}>
                 <h3 className="text-lg font-semibold mb-4 text-white">{column.title}</h3>
                 <ul className="space-y-3">
                   {column.links.map((link, linkIndex) => (
                     <li key={linkIndex}>
-                      <button 
-                        onClick={() => link === "Farmer Login" ? null : scrollToSection(link.toLowerCase().replace(' ', '-'))}
-                        className="text-gray-400 hover:text-green-400 transition-all duration-200 hover:translate-x-1 text-sm"
-                      >
+                      <button onClick={() => link === "Login" ? window.location.href = "/login" : scrollToSection(link.toLowerCase().replace(' ', '-'))} className="text-gray-400 hover:text-green-400 transition-all duration-200 hover:translate-x-1 text-sm">
                         {link}
                       </button>
                     </li>
@@ -774,9 +618,7 @@ const Landing = () => {
           </div>
           
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <p className="text-gray-400 text-sm text-center md:text-left">
-              © 2024 AriFarm Organic Farms. All rights reserved. | Growing a healthier world, one harvest at a time.
-            </p>
+            <p className="text-gray-400 text-sm text-center md:text-left">© 2024 AriFarm Organic Farms. All rights reserved. | Growing a healthier world, one harvest at a time.</p>
             <div className="flex space-x-6 text-sm text-gray-400">
               <a href="#" className="hover:text-green-400 transition-colors duration-200">Privacy Policy</a>
               <a href="#" className="hover:text-green-400 transition-colors duration-200">Terms of Service</a>
@@ -785,6 +627,11 @@ const Landing = () => {
           </div>
         </div>
       </footer>
+
+      <style jsx>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+      `}</style>
     </div>
   );
 };
