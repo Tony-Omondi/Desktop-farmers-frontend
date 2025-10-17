@@ -110,7 +110,6 @@ const Checkout = () => {
   // Get product image with fallback
   const getProductImage = useCallback((product) => {
     if (product?.images?.length > 0) {
-      // Check if the image URL is absolute or relative
       const imageUrl = product.images[0].image;
       return imageUrl.startsWith('http') ? imageUrl : `${BASE_URL}${imageUrl}`;
     }
@@ -128,7 +127,7 @@ const Checkout = () => {
     }, 0);
   }, [cart, getProductFromItem]);
 
-  // Initiate payment
+  // ✅ FIXED: Initiate payment - CORRECT URL!
   const initiatePayment = async () => {
     if (isPaying) return;
     
@@ -139,9 +138,17 @@ const Checkout = () => {
       const token = getAuthToken();
       if (!token) return;
 
+      // Extract email from JWT token
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userEmail = payload.email;
+
+      // ✅ CORRECT URL: /api/orders/payment/initiate/
       const response = await axios.post(
-        `${BASE_URL}/api/orders/orders/payment/initiate/`,
-        {},
+        `${BASE_URL}/api/orders/payment/initiate/`, 
+        {
+          amount: Math.round(finalTotal * 100), // Convert to kobo/cents
+          email: userEmail
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
@@ -209,7 +216,6 @@ const Checkout = () => {
       <header className="bg-white/95 backdrop-blur-md border-b border-emerald-100 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-500 to-green-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-sm sm:text-lg">🌿</span>
@@ -222,7 +228,6 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* Navigation */}
             <div className="flex items-center space-x-2 sm:space-x-4">
               <button
                 onClick={() => navigate('/cart')}
@@ -239,7 +244,6 @@ const Checkout = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-8">
-        {/* Page Header */}
         <div className="text-center mb-6 sm:mb-8 px-2">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-emerald-900 mb-3 sm:mb-4">
             Checkout
@@ -249,7 +253,6 @@ const Checkout = () => {
           </p>
         </div>
 
-        {/* Messages */}
         {error && (
           <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl sm:rounded-2xl flex items-center animate-fade-in mx-2 sm:mx-0">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-100 rounded-lg sm:rounded-xl flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
@@ -285,7 +288,6 @@ const Checkout = () => {
         )}
 
         {!cart || !cart.cart_items || cart.cart_items.length === 0 ? (
-          /* Empty Cart State */
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-emerald-100 p-6 sm:p-8 lg:p-12 text-center mx-2 sm:mx-0">
             <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
               <span className="text-2xl sm:text-3xl lg:text-4xl">🛒</span>
@@ -308,7 +310,6 @@ const Checkout = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-            {/* Order Items */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-emerald-100 overflow-hidden">
                 <div className="p-4 sm:p-6 border-b border-emerald-100 bg-gradient-to-r from-emerald-50 to-green-50">
@@ -328,7 +329,6 @@ const Checkout = () => {
                     
                     return (
                       <div key={item.id} className="flex items-center gap-3 sm:gap-4 p-4 bg-emerald-50 rounded-xl border border-emerald-100 hover:border-emerald-200 transition-all duration-300 group">
-                        {/* Product Image */}
                         <div className="relative flex-shrink-0">
                           <img
                             src={productImage}
@@ -340,7 +340,6 @@ const Checkout = () => {
                           />
                         </div>
 
-                        {/* Product Info */}
                         <div className="flex-1 min-w-0">
                           <h3 className="text-base sm:text-lg font-semibold text-emerald-900 truncate group-hover:text-emerald-700 transition-colors">
                             {product?.name || 'Unknown Product'}
@@ -363,7 +362,6 @@ const Checkout = () => {
                 </div>
               </div>
 
-              {/* Payment Security Info */}
               <div className="mt-4 sm:mt-6 bg-white rounded-xl sm:rounded-2xl shadow-sm border border-emerald-100 p-4 sm:p-6">
                 <h3 className="text-lg sm:text-xl font-bold text-emerald-900 mb-3 sm:mb-4 flex items-center">
                   <span className="w-7 h-7 sm:w-8 sm:h-8 bg-emerald-100 rounded-lg sm:rounded-xl flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0">
@@ -388,7 +386,6 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* Order Summary & Payment */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-emerald-100 sticky top-20 sm:top-24 overflow-hidden">
                 <div className="p-4 sm:p-6 border-b border-emerald-100 bg-gradient-to-r from-emerald-50 to-green-50">
@@ -396,13 +393,11 @@ const Checkout = () => {
                 </div>
                 
                 <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-                  {/* Subtotal */}
                   <div className="flex justify-between items-center py-2 sm:py-3">
                     <span className="text-emerald-600 font-medium text-sm sm:text-base">Subtotal</span>
                     <span className="text-base sm:text-lg font-semibold text-emerald-900">KSh {formatPrice(totalAmount)}</span>
                   </div>
 
-                  {/* Discount */}
                   {cart.coupon && (
                     <div className="flex justify-between items-center py-2 sm:py-3 border-t border-emerald-100">
                       <span className="text-emerald-600 font-medium text-sm sm:text-base">
@@ -414,7 +409,6 @@ const Checkout = () => {
                     </div>
                   )}
 
-                  {/* Total */}
                   <div className="flex justify-between items-center py-3 sm:py-4 border-t border-emerald-200">
                     <span className="text-lg sm:text-xl font-bold text-emerald-900">Total Amount</span>
                     <span className="text-xl sm:text-2xl font-bold text-emerald-600">
@@ -422,7 +416,6 @@ const Checkout = () => {
                     </span>
                   </div>
 
-                  {/* Payment Button */}
                   <div className="pt-3 sm:pt-4">
                     <button
                       onClick={initiatePayment}
@@ -447,7 +440,6 @@ const Checkout = () => {
                     </button>
                   </div>
 
-                  {/* Additional Info */}
                   <div className="pt-3 sm:pt-4 border-t border-emerald-100">
                     <div className="flex items-center justify-center space-x-2 text-xs sm:text-sm text-emerald-600">
                       <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -459,7 +451,6 @@ const Checkout = () => {
                 </div>
               </div>
 
-              {/* Continue Shopping */}
               <button
                 onClick={() => navigate('/dashboard')}
                 className="w-full mt-4 px-4 sm:px-6 py-2 sm:py-3 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-medium transition-all duration-300 flex items-center justify-center space-x-2 text-sm sm:text-base"
@@ -474,7 +465,6 @@ const Checkout = () => {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="bg-white border-t border-emerald-100 mt-8 sm:mt-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="text-center">
@@ -499,8 +489,6 @@ const Checkout = () => {
         .animate-fade-in {
           animation: fade-in 0.3s ease-out;
         }
-        
-        /* Extra small breakpoint for very small screens */
         @media (min-width: 475px) {
           .xs\\:inline { display: inline !important; }
         }

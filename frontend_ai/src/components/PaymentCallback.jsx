@@ -33,7 +33,7 @@ const PaymentCallback = () => {
 
         setStatus('Verifying payment with bank...');
         
-        const response = await axios.get(`${BASE_URL}/api/orders/orders/payment/callback/`, {
+        const response = await axios.get(`${BASE_URL}/api/orders/payment/callback/`, {
           headers: { Authorization: `Bearer ${token.trim()}` },
           params: { reference },
         });

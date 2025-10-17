@@ -1,5 +1,4 @@
-// frontend_ai/src/components/AddCategoryForm.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const BASE_URL = 'http://localhost:8000';
@@ -14,22 +13,18 @@ const AddCategoryForm = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [categories, setCategories] = useState([]);
+    const formRef = useRef(null);
+    const successRef = useRef(null);
 
+    // Auto-scroll to success message
     useEffect(() => {
-        fetchCategories();
-    }, []);
-
-    const fetchCategories = async () => {
-        try {
-            const response = await axios.get(`${BASE_URL}/api/adamin/categories/`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
+        if (success && successRef.current) {
+            successRef.current.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
             });
-            setCategories(response.data);
-        } catch (err) {
-            console.error('Failed to fetch categories', err);
         }
-    };
+    }, [success]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -60,170 +55,240 @@ const AddCategoryForm = () => {
         setError('');
         setSuccess('');
         
+        // DETECT: Edit (has id) vs Create (no id)
+        const isEditing = formData.id !== undefined;
+        const url = isEditing 
+            ? `${BASE_URL}/api/adamin/categories/${formData.id}/`  // UPDATE
+            : `${BASE_URL}/api/adamin/categories/create/`;        // CREATE
+        
+        const method = isEditing ? axios.put : axios.post;
+        
         try {
-            await axios.post(`${BASE_URL}/api/adamin/categories/create/`, formData, {
+            await method(url, formData, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('access_token')}` },
             });
-            setSuccess('Category created successfully!');
+            
+            const action = isEditing ? 'updated' : 'created';
+            setSuccess(`🎉 Category ${action} successfully!`);
+            
+            // Reset form (remove id for next create)
             setFormData({ 
                 name: '', 
                 slug: '',
                 description: '',
                 is_active: true
             });
-            fetchCategories(); // Refresh the categories list
+            
+            // Success animation
+            if (formRef.current) {
+                formRef.current.classList.add('animate-pulse-success');
+                setTimeout(() => formRef.current?.classList.remove('animate-pulse-success'), 2000);
+            }
         } catch (err) {
             setError(err.response?.data?.detail || 
                      err.response?.data?.message || 
-                     'Failed to create category');
+                     'Failed to save category');
+            
+            // Error shake
+            if (formRef.current) {
+                formRef.current.classList.add('animate-shake');
+                setTimeout(() => formRef.current?.classList.remove('animate-shake'), 500);
+            }
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleSlugEdit = (e) => {
-        // Only update slug if user manually edits it
         setFormData({ ...formData, slug: e.target.value });
     };
 
     return (
-        <div className="max-w-2xl mx-auto">
-            <div className="bg-white p-6 rounded-xl shadow-sm">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-6">Add New Category</h2>
-                
-                {error && (
-                    <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 flex items-start">
-                        <svg className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+        <div className="max-w-4xl mx-auto animate-fade-in">
+            {/* Enhanced Header */}
+            <div className="text-center mb-8 animate-slide-down">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent mb-3">
+                    Category Management
+                </h1>
+                <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+                    Create and manage product categories to organize your inventory effectively
+                </p>
+            </div>
+
+            {/* Enhanced Form Section */}
+            <div 
+                ref={formRef}
+                className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-500"
+            >
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-2xl flex items-center justify-center">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                                d={formData.id ? "M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" : "M12 6v6m0 0v6m0-6h6m-6 0H6"} />
                         </svg>
-                        <div>{error}</div>
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800">
+                            {formData.id ? `Edit "${formData.name}"` : 'Create New Category'}
+                        </h2>
+                        <p className="text-gray-600">
+                            {formData.id ? 'Update category details' : 'Add a new category to organize your products'}
+                        </p>
+                    </div>
+                </div>
+                
+                {/* Enhanced Messages */}
+                {error && (
+                    <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl animate-shake flex items-start gap-3">
+                        <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="text-red-700 font-medium">{error}</div>
                     </div>
                 )}
                 
                 {success && (
-                    <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-lg border border-green-200 flex items-start">
-                        <svg className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        <div>{success}</div>
+                    <div 
+                        ref={successRef}
+                        className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl animate-slide-up flex items-start gap-3"
+                    >
+                        <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="text-green-700 font-medium">{success}</div>
                     </div>
                 )}
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                            Category Name *
+                    {/* Name Field */}
+                    <div className="animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                        <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <span>Category Name</span>
+                            <span className="text-red-500">*</span>
                         </label>
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                            placeholder="e.g., Electronics, Clothing, Books"
-                            required
-                        />
+                        <div className="relative">
+                            <input
+                                type="text"
+                                id="name"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-white/50 backdrop-blur-sm placeholder-gray-400"
+                                placeholder="e.g., Electronics, Clothing, Books"
+                                required
+                            />
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div>
-                        <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-1">
-                            Slug *
+                    {/* Slug Field */}
+                    <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                        <label htmlFor="slug" className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                            <span>Slug</span>
+                            <span className="text-red-500">*</span>
                         </label>
-                        <input
-                            type="text"
-                            id="slug"
-                            name="slug"
-                            value={formData.slug}
-                            onChange={handleSlugEdit}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                            placeholder="e.g., electronics, clothing, books"
-                            required
-                        />
-                        <p className="mt-1 text-sm text-gray-500">
-                            URL-friendly version of the name. Use only lowercase letters, numbers, and hyphens.
+                        <div className="relative">
+                            <input
+                                type="text"
+                                id="slug"
+                                name="slug"
+                                value={formData.slug}
+                                onChange={handleSlugEdit}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-white/50 backdrop-blur-sm placeholder-gray-400 font-mono text-sm"
+                                placeholder="e.g., electronics, clothing, books"
+                                required
+                            />
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p className="mt-2 text-sm text-gray-500 flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            URL-friendly version. Use lowercase, numbers, and hyphens only.
                         </p>
                     </div>
                     
-                    <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                    {/* Description Field */}
+                    <div className="animate-slide-up" style={{ animationDelay: '0.3s' }}>
+                        <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-3">
                             Description
                         </label>
-                        <textarea
-                            id="description"
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            rows={3}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                            placeholder="Brief description of this category..."
-                        />
-                    </div>
-                    
-                    <div className="flex items-center">
-                        <input
-                            id="is_active"
-                            name="is_active"
-                            type="checkbox"
-                            checked={formData.is_active}
-                            onChange={handleChange}
-                            className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-                        />
-                        <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700">
-                            Category is active
-                        </label>
-                    </div>
-                    
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-                            isLoading 
-                                ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                                : 'bg-emerald-600 text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500'
-                        }`}
-                    >
-                        {isLoading ? (
-                            <div className="flex items-center justify-center">
-                                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <div className="relative">
+                            <textarea
+                                id="description"
+                                name="description"
+                                value={formData.description}
+                                onChange={handleChange}
+                                rows={4}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-white/50 backdrop-blur-sm placeholder-gray-400 resize-none"
+                                placeholder="Brief description of this category..."
+                            />
+                            <div className="absolute right-3 top-3">
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                                 </svg>
-                                Creating Category...
                             </div>
-                        ) : (
-                            'Create Category'
-                        )}
-                    </button>
+                        </div>
+                    </div>
+                    
+                    {/* Active Checkbox */}
+                    <div className="animate-slide-up" style={{ animationDelay: '0.4s' }}>
+                        <div className="flex items-center p-4 bg-gray-50 rounded-xl border-2 border-gray-200 hover:border-emerald-300 transition-all duration-300">
+                            <input
+                                id="is_active"
+                                name="is_active"
+                                type="checkbox"
+                                checked={formData.is_active}
+                                onChange={handleChange}
+                                className="h-5 w-5 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded transition-all duration-200"
+                            />
+                            <label htmlFor="is_active" className="ml-3 block text-sm font-medium text-gray-700">
+                                <span className="text-lg">✅</span> Category is active and visible to customers
+                            </label>
+                        </div>
+                    </div>
+                    
+                    {/* Submit Button */}
+                    <div className="animate-slide-up" style={{ animationDelay: '0.5s' }}>
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 ${
+                                isLoading 
+                                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
+                                    : 'bg-gradient-to-r from-emerald-600 to-cyan-600 text-white hover:from-emerald-700 hover:to-cyan-700 shadow-lg hover:shadow-xl'
+                            }`}
+                        >
+                            {isLoading ? (
+                                <div className="flex items-center justify-center gap-3">
+                                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    <span>{formData.id ? 'Saving...' : 'Creating...'}</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center gap-3">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
+                                            d={formData.id ? "M5 13l4 4L19 7" : "M12 6v6m0 0v6m0-6h6m-6 0H6"} />
+                                    </svg>
+                                    <span>{formData.id ? 'Save Changes' : 'Create Category'}</span>
+                                </div>
+                            )}
+                        </button>
+                    </div>
                 </form>
             </div>
-            
-            {/* Existing Categories */}
-            {categories.length > 0 && (
-                <div className="mt-8 bg-white p-6 rounded-xl shadow-sm">
-                    <h3 className="text-lg font-medium text-gray-800 mb-4">Existing Categories</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {categories.map(category => (
-                            <div key={category.id} className="border rounded-lg p-4 flex justify-between items-center">
-                                <div>
-                                    <h4 className="font-medium">{category.name}</h4>
-                                    <p className="text-sm text-gray-500">{category.slug}</p>
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                        category.is_active 
-                                            ? 'bg-green-100 text-green-800' 
-                                            : 'bg-gray-100 text-gray-800'
-                                    }`}>
-                                        {category.is_active ? 'Active' : 'Inactive'}
-                                    </span>
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                    {category.product_count || 0} products
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
