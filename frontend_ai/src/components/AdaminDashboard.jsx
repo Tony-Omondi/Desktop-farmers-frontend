@@ -14,7 +14,7 @@ import RecipesScreen from './RecipesScreen';
 import OrdersScreen from './OrdersScreen';
 import PaymentsScreen from './PaymentsScreen';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'https://arifarm.onrender.com';
 
 const AdaminDashboard = () => {
     const [activeTab, setActiveTab] = useState('overview');

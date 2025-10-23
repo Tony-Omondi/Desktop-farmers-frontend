@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'https://arifarm.onrender.com';
 
 const AddProductForm = () => {
     const [formData, setFormData] = useState({

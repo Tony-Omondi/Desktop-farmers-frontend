@@ -11,7 +11,7 @@ import ClientSidebar from './ClientSidebar';
 import ClientWelcomeSection from './ClientWelcomeSection';
 import ClientMobileMenu from './ClientMobileMenu';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'https://arifarm.onrender.com';
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);

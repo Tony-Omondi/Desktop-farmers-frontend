@@ -21,7 +21,7 @@ const ForgotPassword = () => {
 
     try {
       setIsLoading(true)
-      const response = await axios.post('http://localhost:8000/api/auth/password-reset/', {
+      const response = await axios.post('https://arifarm.onrender.com/api/auth/password-reset/', {
         email,
       })
       setMessage(response.data.message || 'Password reset link has been sent to your email.')

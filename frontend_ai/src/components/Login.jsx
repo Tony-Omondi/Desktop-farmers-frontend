@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { GoogleLogin } from '@react-oauth/google';
 
-const BASE_URL = 'http://localhost:8000/api';
+const BASE_URL = 'https://arifarm.onrender.com/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');

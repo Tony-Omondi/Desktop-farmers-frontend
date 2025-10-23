@@ -43,10 +43,10 @@ const OrdersScreen = ({ orders: initialOrders = [] }) => {
         setUpdatingStatus(true);
         try {
             const accessToken = localStorage.getItem('access_token');
-            console.log('🔍 PATCHING:', `http://localhost:8000/api/adamin/orders/${orderId}/`);
+            console.log('🔍 PATCHING:', `https://arifarm.onrender.com/api/adamin/orders/${orderId}/`);
             
             const response = await axios.patch(
-                `http://localhost:8000/api/adamin/orders/${orderId}/`,
+                `https://arifarm.onrender.com/api/adamin/orders/${orderId}/`,
                 { status: newStatus },
                 { headers: { Authorization: `Bearer ${accessToken}` } }
             );
